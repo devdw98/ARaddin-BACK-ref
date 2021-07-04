@@ -1,0 +1,33 @@
+{
+  "name": "araddin-back",
+  "version": "1.0.0",
+  "description": "sangmyung univ. computer-science 2021 capston project",
+  "main": "server.js",
+  "scripts": {
+    "build-ts": "tsc",
+    "serve": "node dist/server.js",
+    "start": "npm run serve",
+    "dev": "npx nodemon --exec ts-node ./src/server.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devdw98/ARaddin-BACK-ref.git"
+  },
+  "author": "dowonpark",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/devdw98/ARaddin-BACK-ref/issues"
+  },
+  "homepage": "https://github.com/devdw98/ARaddin-BACK-ref#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.12",
+    "@types/node": "^16.0.0",
+    "nodemon": "^2.0.9",
+    "ts-node": "^10.0.0",
+    "typescript": "^4.3.5"
+  }
+}
