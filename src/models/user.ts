@@ -1,4 +1,4 @@
-class User {
+class User implements IUser {
   email: string;
   nickname: string;
   photoPath: string;
@@ -8,13 +8,18 @@ class User {
     this.photoPath = email.split('@')[0];
   }
   get() {
-    const user = {
+    const user: IUser = {
       email: this.email,
       nickname: this.nickname,
-      photoPath: this.photoPath,
+      //   photoPath: this.photoPath,
     };
     return user;
   }
+}
+
+export interface IUser {
+  email: string;
+  nickname: string;
 }
 
 export default User;

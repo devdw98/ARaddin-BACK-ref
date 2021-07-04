@@ -18,7 +18,7 @@ async function login(req: Request, res: Response) {
     if (!email) {
       return res
         .status(400)
-        .json({ success: false, dest: `email isn't valid.` });
+        .json({ success: false, msg: `email isn't valid.` });
     }
     const user = new User(email, nickname);
     const isExisted = await UserDao.findAndUpdate(user);
@@ -33,7 +33,7 @@ async function login(req: Request, res: Response) {
           })
         : res.status(400).json({
             success: false,
-            dest: `user can't create this server.`,
+            msg: `user can't create this server.`,
           });
     }
     return res.status(200).json({
@@ -44,7 +44,7 @@ async function login(req: Request, res: Response) {
     });
   } catch (e) {
     logger.error(e);
-    return res.status(400).json({ success: false, dest: e.message });
+    return res.status(400).json({ success: false, msg: e.message });
   }
 }
 
