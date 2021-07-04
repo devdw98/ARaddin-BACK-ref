@@ -17,4 +17,6 @@ app.get('/', (req, res) => {
 
 // firebase
 const firebase = initialFirebase(firebaseFile);
+export const firebaseAuth = firebase.auth();
+export const firestore = firebase.firestore();
 export default app;

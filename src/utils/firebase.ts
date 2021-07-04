@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import { firebaseAuth } from '../app';
 import logger from './logger';
 
 function initialFirebase(firebaseFile: string) {
@@ -14,4 +15,16 @@ function initialFirebase(firebaseFile: string) {
   return firebase;
 }
 
-export { initialFirebase };
+// firebase token 검증
+async function checkFirebase(token: string): Promise<string> {
+  try {
+    const userInfo = await firebaseAuth.getUser(token); //verifyIdToken(token);
+    const email = userInfo.email;
+    return email ? email : null;
+  } catch (err) {
+    logger.error(err);
+    return null;
+  }
+}
+
+export { initialFirebase, checkFirebase };
