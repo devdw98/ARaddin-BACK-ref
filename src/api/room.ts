@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { IUser } from '../models/user';
+import { IUser, IRoomUser } from '../models/user';
 import * as yup from 'yup';
 import * as RoomDao from '../dao/room';
 import { IRoom, Place, ISetting } from '../models/room';
@@ -13,7 +13,7 @@ async function createRoom(req: Request, res: Response) {
   try {
     const { email, nickname } = userScheme.validateSync(req.body);
     const photoPath = email.split('@')[0];
-    const master: IUser = { email, nickname, photoPath };
+    const master: IRoomUser = { email, nickname, photoPath, isReady: false };
     const room = await RoomDao.insert(master);
     if (!room) {
       logger.error(`POST /room | failed to create room.`);
@@ -80,7 +80,7 @@ async function enterRoom(req: Request, res: Response) {
     const code = codeSchema.validateSync(req.query.code);
     const { email, nickname } = userScheme.validateSync(req.body);
     const photoPath = email.split('@')[0];
-    const user: IUser = { email, nickname, photoPath };
+    const user: IRoomUser = { email, nickname, photoPath, isReady: false };
     const room = await RoomDao.find(code);
     if (!room) {
       //방 없음

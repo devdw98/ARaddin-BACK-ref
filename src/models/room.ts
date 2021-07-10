@@ -1,9 +1,9 @@
-import { IUser } from './user';
+import { IRoomUser } from './user';
 
 export interface IRoom {
   code: string;
-  master: IUser;
-  users: Array<IUser>;
+  master: IRoomUser;
+  users: Array<IRoomUser>;
   setting: ISetting;
 }
 

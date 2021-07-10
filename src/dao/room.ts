@@ -1,6 +1,6 @@
 import { IRoom, ISetting, Place } from '../models/room';
 import { firestore } from '../app';
-import { IUser } from '../models/user';
+import { IRoomUser } from '../models/user';
 import logger from '../utils/logger';
 
 const collection = `rooms`;
@@ -12,7 +12,7 @@ function getRandomCode() {
   return code;
 }
 
-async function insert(master: IUser) {
+async function insert(master: IRoomUser) {
   try {
     const ref = firestore.collection(collection);
     const setting: ISetting = {
@@ -60,8 +60,8 @@ async function find(code: string) {
 async function update(
   code: string,
   setting?: ISetting,
-  users?: IUser[],
-  master?: IUser
+  users?: IRoomUser[],
+  master?: IRoomUser
 ) {
   try {
     const ref = firestore.collection(collection);

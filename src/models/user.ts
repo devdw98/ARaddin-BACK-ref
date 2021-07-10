@@ -4,7 +4,6 @@ export interface IUser {
   photoPath?: string;
 }
 
-// export interface IRoomUser {
-//   email: string;
-//   nickname: string;
-// }
+export interface IRoomUser extends IUser {
+  isReady: boolean;
+}
