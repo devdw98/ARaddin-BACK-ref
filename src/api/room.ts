@@ -30,7 +30,7 @@ async function createRoom(req: Request, res: Response) {
 
 const codeSchema = yup.string().required();
 const changeSettingSchema = yup.object({
-  email: yup.string().required(),
+  nickname: yup.string().required(),
   goal: yup.number().required(),
   timeLimit: yup.number().required(),
   place: yup.mixed<Place>().required(),
@@ -38,9 +38,8 @@ const changeSettingSchema = yup.object({
 async function changeSetting(req: Request, res: Response) {
   try {
     const code = codeSchema.validateSync(req.query.code);
-    const { email, goal, timeLimit, place } = changeSettingSchema.validateSync(
-      req.body
-    );
+    const { nickname, goal, timeLimit, place } =
+      changeSettingSchema.validateSync(req.body);
     const room = await RoomDao.find(code);
     if (!room) {
       logger.info(`PUT /room | Failed to find room code : ${code}.`);
@@ -48,13 +47,15 @@ async function changeSetting(req: Request, res: Response) {
         .status(400)
         .json({ success: false, msg: `Failed to find room code : ${code}.` });
     }
-    if (room.master.email === email) {
+    if (room.master.nickname === nickname) {
       // 방장인 경우만 변경 가능
       const setting: ISetting = { goal, timeLimit, place };
       const update = await RoomDao.update(code, setting);
       logger.info(`PUT /room | success to change room setting! code : ${code}`);
       return res.status(200).json({ room: update });
-    } else if (room.users.filter((isExisted) => isExisted.email === email)) {
+    } else if (
+      room.users.filter((isExisted) => isExisted.nickname === nickname)
+    ) {
       logger.info(
         `PUT /room | failed to change room setting! code : ${code} - you are not existed in the room.`
       );
@@ -112,9 +113,9 @@ async function leaveRoom(req: Request, res: Response) {
         .json({ success: false, msg: `Can't find room ${code}` });
     } else {
       room.users = room.users.filter(
-        (exitUser) => exitUser.email !== user.email
+        (exitUser) => exitUser.nickname !== user.nickname
       );
-      if (room.master.email === user.email) {
+      if (room.master.nickname === user.nickname) {
         //방장이 나감
         room.master = room.users[0];
         if (room.users.length < 1) {
