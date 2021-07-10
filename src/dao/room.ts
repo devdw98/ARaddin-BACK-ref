@@ -1,34 +1,65 @@
-import Room, { Setting, Place } from '../models/room';
+import { IRoom, ISetting, Place } from '../models/room';
 import { firestore } from '../app';
 import { IUser } from '../models/user';
+import logger from '../utils/logger';
 
 const collection = `rooms`;
 
-async function insert(room: Room) {
-  const ref = firestore.collection(collection);
-  const info = room.info();
-  const doc = await ref.doc(room.code).set(info);
-  const result = {
-    code: room.code,
-    room: (await ref.doc(room.code).get()).data(),
-  };
-  return result;
-  // return doc.writeTime.toDate().getMinutes() === new Date().getMinutes();
+function getRandomCode() {
+  const code =
+    Math.random().toString(36).substring(7, 10) +
+    Math.random().toString(36).substring(2, 5);
+  return code;
+}
+
+async function insert(master: IUser) {
+  try {
+    const ref = firestore.collection(collection);
+    const setting: ISetting = {
+      goal: 10,
+      timeLimit: 10,
+      place: Place.UP,
+    };
+    const info: IRoom = {
+      code: getRandomCode(),
+      master: master,
+      users: [master],
+      setting: setting,
+    };
+    const doc = await ref.doc(info.code).set(info);
+    const result = {
+      code: info.code,
+      room: (await ref.doc(info.code).get()).data(),
+    };
+    return result;
+    // return doc.writeTime.toDate().getMinutes() === new Date().getMinutes();
+  } catch (e) {
+    logger.error(e);
+  }
 }
 async function find(code: string) {
-  const ref = firestore.collection(collection);
-  const doc = await ref.doc(code).get();
-  if (!doc.exists) {
-    return null; //방 없음
+  try {
+    const ref = firestore.collection(collection);
+    const doc = await ref.doc(code).get();
+    if (!doc.exists) {
+      return null; //방 없음
+    }
+    const data = await doc.data();
+    const room: IRoom = {
+      code: code,
+      master: data.master,
+      users: data.users,
+      setting: data.setting,
+    };
+    return room;
+  } catch (e) {
+    logger.error(e);
   }
-  const data = await doc.data();
-  const room = new Room(data.master, code, data.users, data.setting);
-  return room;
 }
 
 async function update(
   code: string,
-  setting?: Setting,
+  setting?: ISetting,
   users?: IUser[],
   master?: IUser
 ) {
@@ -36,7 +67,7 @@ async function update(
     const ref = firestore.collection(collection);
     const obj: any = {}; //timestamp: new Date()
     if (setting) {
-      obj.setting = setting.get();
+      obj.setting = setting;
     }
     if (users) {
       obj.users = users;
@@ -46,18 +77,22 @@ async function update(
       obj.users = users;
     }
     const doc = await ref.doc(code).update(obj);
-    console.log((await ref.doc(code).get()).data());
+    // console.log((await ref.doc(code).get()).data());
     return !!doc.writeTime.toDate() ? (await ref.doc(code).get()).data() : null;
   } catch (e) {
-    console.log(e);
+    logger.error(e);
     return e;
   }
 }
 
 async function deleteRoom(code: string) {
-  const ref = firestore.collection(collection);
-  const doc = await ref.doc(code).delete();
-  return !!doc.writeTime;
+  try {
+    const ref = firestore.collection(collection);
+    const doc = await ref.doc(code).delete();
+    return !!doc.writeTime;
+  } catch (e) {
+    logger.error(e);
+  }
 }
 
 export { insert, find, update, deleteRoom };

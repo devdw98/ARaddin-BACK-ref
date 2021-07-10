@@ -1,26 +1,35 @@
 import logger from '../utils/logger';
 import { firestore } from '../app';
-import User from '../models/user';
+import { IUser } from '../models/user';
 
 const collection = `users`;
 
-async function insert(user: User) {
-  const ref = firestore.collection(collection);
-  const info = user.get();
-  const doc = await ref.doc(user.email).set(info);
-  console.log(`${doc.writeTime.toDate().getDate() - new Date().getDate()}`);
-  return !(doc.writeTime.toDate().getDate() - new Date().getDate());
-}
-async function find(user: User) {
-  const ref = firestore.collection(collection);
-  const doc = await ref.doc(user.email).get();
-  if (!doc.exists) {
-    return null; //사용자 없음
+async function insert(user: IUser) {
+  try {
+    const ref = firestore.collection(collection);
+    const info = user;
+    const doc = await ref.doc(user.email).set(info);
+    console.log(`${doc.writeTime.toDate().getDate() - new Date().getDate()}`);
+    return !(doc.writeTime.toDate().getDate() - new Date().getDate());
+  } catch (e) {
+    logger.error(e);
   }
-  const data = await doc.data();
-  return user;
 }
-async function findAndUpdate(user: User) {
+
+async function find(user: IUser) {
+  try {
+    const ref = firestore.collection(collection);
+    const doc = await ref.doc(user.email).get();
+    if (!doc.exists) {
+      return null; //사용자 없음
+    }
+    const data = await doc.data();
+    return user;
+  } catch (e) {
+    logger.error(e);
+  }
+}
+async function findAndUpdate(user: IUser) {
   try {
     const ref = firestore.collection(collection);
     const doc = await ref.doc(user.email).get();
@@ -32,6 +41,7 @@ async function findAndUpdate(user: User) {
       const updateDoc = await ref
         .doc(user.email)
         .update({ nickname: user.nickname });
+      return updateDoc ? user : null;
     }
     return user;
   } catch (e) {
