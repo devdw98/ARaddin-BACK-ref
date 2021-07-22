@@ -16,12 +16,12 @@ async function createRoom(req: Request, res: Response) {
     const master: IRoomUser = { email, nickname, photoPath, isReady: false };
     const room = await RoomDao.insert(master);
     if (!room) {
-      logger.error(`POST /room | failed to create room.`);
+      logger.error(`POST /room/new | failed to create room.`);
       return res
         .status(400)
         .json({ success: false, msg: `couldn't create room` });
     }
-    logger.info(`POST /room | success! room code : ${room.code}`);
+    logger.info(`POST /room/new | success! room code : ${room.code}`);
     return res.status(201).json({ code: room.code, room: room.room });
   } catch (e) {
     return res.status(400).json({ success: false, msg: e.message });
@@ -84,14 +84,14 @@ async function enterRoom(req: Request, res: Response) {
     const room = await RoomDao.find(code);
     if (!room) {
       //방 없음
-      logger.info(`GET /room | You can't find room code : ${code}`);
+      logger.info(`POST /room | You can't find room code : ${code}`);
       return res
         .status(400)
         .json({ success: false, msg: `Can't find room : ${code}` });
     } else {
       room.users = room.users.concat([user]);
       const result = await RoomDao.update(code, null, room.users);
-      logger.info(`GET /room | Success to enter room code : ${code}`);
+      logger.info(`POST /room | Success to enter room code : ${code}`);
       return res.status(200).json({ room: result });
     }
   } catch (e) {
@@ -138,9 +138,9 @@ async function leaveRoom(req: Request, res: Response) {
 }
 
 const router = express.Router();
-router.post('/', createRoom);
+router.post('/new', createRoom);
 router.put('/', changeSetting);
-router.get('/', enterRoom);
+router.post('/', enterRoom);
 router.delete('/', leaveRoom);
 
 export { router as roomRouter };
