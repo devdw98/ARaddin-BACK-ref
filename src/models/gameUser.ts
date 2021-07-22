@@ -6,6 +6,6 @@ export enum Role {
 export interface IGameUser {
   [username: string]: {
     role?: Role;
-    havingTreasures?: number[];
+    treasureCount: number; // 유저가 보물 찾을 때마다 +1
   };
 }
