@@ -48,4 +48,23 @@ async function findAndUpdate(user: IUser) {
     logger.error(e);
   }
 }
-export { insert, findAndUpdate };
+
+async function findByPhotoPath(photoPath: string) {
+  try {
+    const ref = firestore.collection(collection);
+    const doc = await ref.doc(photoPath + '@gmail.com').get();
+    if (!doc.exists) {
+      return null;
+    }
+    const data = await doc.data();
+    const user: IUser = {
+      email: data.email,
+      nickname: data.nickname,
+      photoPath: photoPath,
+    };
+    return user;
+  } catch (e) {
+    logger.error(e);
+  }
+}
+export { insert, findAndUpdate, findByPhotoPath };
