@@ -7,6 +7,7 @@ import * as UserDao from '../dao/user';
 import { photoPath } from '../vars';
 import multer from 'multer';
 import fs from 'fs';
+import { photoEncodingAIServer, isUserAIServer } from '../utils/axiosUtils';
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -44,18 +45,28 @@ async function login(req: Request, res: Response) {
     } else {
       logger.info(`POST /user | LOGIN USER ${nickname}`);
     }
-    // photos upload
+    // photos upload + AI server encoding photos
     const files = req.files as Express.Multer.File[];
     const isUpload = uploadPhotos(userPhotoPath, files);
-
-    return isUpload
-      ? res.status(201).json({
-          user: {
-            email: user.email,
-            nickname: user.nickname,
-          },
-        })
-      : res.status(400).json({ success: false, msg: 'Failed photo upload' });
+    if (!isUpload) {
+      return res
+        .status(400)
+        .json({ success: false, msg: 'Failed photo upload' });
+    }
+    // const aiServerResponse = await photoEncodingAIServer(userPhotoPath);
+    // if (aiServerResponse === 201) {
+    return res.status(201).json({
+      user: {
+        email: user.email,
+        nickname: user.nickname,
+      },
+    });
+    // } else {
+    //   return res.status(400).json({
+    //     success: false,
+    //     msg: 'Failed photo upload AI Server',
+    //   });
+    // }
   } catch (e) {
     logger.error(e);
     return res.status(400).json({ success: false, msg: e.message });
