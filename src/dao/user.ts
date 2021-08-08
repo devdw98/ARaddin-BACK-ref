@@ -67,4 +67,23 @@ async function findByPhotoPath(photoPath: string) {
     logger.error(e);
   }
 }
-export { insert, findAndUpdate, findByPhotoPath };
+
+async function findByEmail(email: string) {
+  try {
+    const ref = firestore.collection(collection);
+    const doc = await ref.doc(email).get();
+    if (!doc.exists) {
+      return null;
+    }
+    const data = await doc.data();
+    const user: IUser = {
+      email: data.email,
+      nickname: data.nickname,
+      photoPath: data.photoPath,
+    };
+    return user;
+  } catch (e) {
+    logger.error(e.message);
+  }
+}
+export { insert, findAndUpdate, findByPhotoPath, findByEmail };
