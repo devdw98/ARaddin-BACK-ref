@@ -18,7 +18,7 @@ function initialFirebase(firebaseFile: string) {
 // firebase token 검증
 async function checkFirebase(token: string): Promise<string> {
   try {
-    const userInfo = await firebaseAuth.getUser(token); //verifyIdToken(token);
+    const userInfo = await firebaseAuth.verifyIdToken(token); //getUser(token);
     const email = userInfo.email;
     return email ? email : null;
   } catch (err) {
