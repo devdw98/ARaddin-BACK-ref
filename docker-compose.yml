@@ -6,6 +6,8 @@ services:
     image: araddin:${mainTag}
     volumes:
       - araddin/photos:/photos
+    ports:
+      - 3000:3000
     networks:
       - capston_net
 
