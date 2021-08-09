@@ -3,7 +3,7 @@ import multer from 'multer';
 import logger from '../utils/logger';
 import { rootPhotoPath, userPhotoPath, roomPhotoPath } from '../vars';
 
-export const userStorage = multer.diskStorage({
+const userStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     const dirPath = rootPhotoPath + userPhotoPath;
     const isExisted = fs.existsSync(dirPath);
@@ -17,6 +17,21 @@ export const userStorage = multer.diskStorage({
   },
 });
 export const uploadUser = multer({ storage: userStorage });
+
+const roomStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const dirPath = rootPhotoPath + roomPhotoPath;
+    const isExisted = fs.existsSync(dirPath);
+    if (!isExisted) {
+      fs.mkdirSync(dirPath, { recursive: true });
+    }
+    cb(null, dirPath);
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${file.originalname}`);
+  },
+});
+export const uploadRoom = multer({ storage: roomStorage });
 
 export function uploadPhotos(
   rootPhotoPath: string,
@@ -42,7 +57,7 @@ export function uploadPhotos(
     }
     return true;
   } catch (e) {
-    logger.error(e);
+    logger.error(e.message);
     return false;
   }
 }

@@ -1,17 +1,13 @@
 import express, { Request, Response } from 'express';
-import { IUser, IRoomUser } from '../models/user';
+import { IRoomUser } from '../models/user';
 import * as yup from 'yup';
 import * as RoomDao from '../dao/room';
-import { IRoom, Place, ISetting } from '../models/room';
+import { Place, ISetting } from '../models/room';
 import logger from '../utils/logger';
 import { learningPhotosAIServer } from '../utils/axiosUtils';
 import { checkFirebase } from '../utils/firebase';
 import { findByEmail } from '../dao/user';
 
-const userScheme = yup.object({
-  email: yup.string().email().required(),
-  nickname: yup.string(),
-});
 const tokenScheme = yup.string().required();
 
 async function getUser(token: string) {
@@ -63,7 +59,6 @@ async function changeSetting(req: Request, res: Response) {
       req.body
     );
     const token = tokenScheme.validateSync(req.headers.token);
-
     const user = await getUser(token);
     if (!user) {
       const failedLog = `can't find user`;
