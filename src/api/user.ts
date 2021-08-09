@@ -4,20 +4,9 @@ import * as yup from 'yup';
 import { IUser } from '../models/user';
 import { checkFirebase } from '../utils/firebase';
 import * as UserDao from '../dao/user';
-import { photoPath } from '../vars';
-import multer from 'multer';
-import fs from 'fs';
+import { rootPhotoPath, userPhotoPath } from '../vars';
+import { uploadPhotos, uploadUser } from '../utils/multerUtils';
 import { photoEncodingAIServer, isUserAIServer } from '../utils/axiosUtils';
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, photoPath);
-  },
-  filename: (req, file, cb) => {
-    cb(null, `${file.originalname}`);
-  },
-});
-const upload = multer({ storage: storage });
 
 const loginScheme = yup.object({
   token: yup.string().required(),
@@ -35,8 +24,8 @@ async function login(req: Request, res: Response) {
         .status(400)
         .json({ success: false, msg: `email isn't valid.` });
     }
-    const userPhotoPath = email.split('@')[0];
-    const user: IUser = { email, nickname, photoPath: userPhotoPath };
+    const photoPath = email.split('@')[0];
+    const user: IUser = { email, nickname, photoPath: photoPath };
     let isExisted = await UserDao.findAndUpdate(user);
     if (!isExisted) {
       // 기존 사용자 없음
@@ -47,7 +36,11 @@ async function login(req: Request, res: Response) {
     }
     // photos upload + AI server encoding photos
     const files = req.files as Express.Multer.File[];
-    const isUpload = uploadPhotos(userPhotoPath, files);
+    const isUpload = uploadPhotos(
+      rootPhotoPath + userPhotoPath,
+      photoPath,
+      files
+    );
     if (!isUpload) {
       return res
         .status(400)
@@ -72,28 +65,6 @@ async function login(req: Request, res: Response) {
     return res.status(400).json({ success: false, msg: e.message });
   }
 }
-
-function uploadPhotos(userPhotoPath: string, files: Express.Multer.File[]) {
-  try {
-    const filenames = files.map((f) =>
-      f.fieldname === 'photos' ? f.filename : null
-    );
-    !fs.existsSync(`${photoPath}/${userPhotoPath}`) &&
-      fs.mkdirSync(`${photoPath}/${userPhotoPath}`);
-    for (const name in filenames) {
-      const oldname = `${photoPath}/${filenames[name]}`;
-      const newname = `${photoPath}/${userPhotoPath}/${userPhotoPath}-${name}.jpg`;
-      fs.rename(oldname, newname, function (err) {
-        if (err) throw err;
-      });
-    }
-    return true;
-  } catch (e) {
-    logger.error(e);
-    return false;
-  }
-}
-
 const router = express.Router();
-router.post('/', [upload.array('photos')], login);
+router.post('/', [uploadUser.array('photos')], login);
 export { router as userRouter };
