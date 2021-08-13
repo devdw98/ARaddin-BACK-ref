@@ -33,8 +33,7 @@ export function learningPhotosAIServer(code: string, userPhotoPath: string) {
 
 export function isUserAIServer(code: string) {
   return axios
-    .post(`http://httpbin.org/post`, {
-      //`${aiServer}/model/match`, {
+    .post(`${aiServer}/model/match`, {
       room_num: code,
       path: `${rootPhotoPath}/${roomPhotoPath}/${code}`,
     })
