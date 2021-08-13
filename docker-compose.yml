@@ -10,6 +10,15 @@ services:
       - 3000:3000
     networks:
       - capston_net
+  ai-server:
+    container_name: araddin-ai
+    image: araddin-ai:${aiTag}
+    volumes:
+      - araddin/photos:/photos
+    ports:
+      - 8000:8000
+    networks:
+      - capston_net
 
 networks:
   capston_net:
