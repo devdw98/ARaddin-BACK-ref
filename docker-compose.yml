@@ -8,6 +8,8 @@ services:
       - araddin/photos:/photos
     ports:
       - 3000:3000
+    links:
+      - ai-server
     networks:
       - capston_net
   ai-server:
