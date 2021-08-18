@@ -7,11 +7,11 @@ import { ITreasure } from '../models/treasure';
 import { ICabinet } from '../models/cabinet';
 import { IGameUser, Role } from '../models/gameUser';
 import { IGame } from '../models/game';
-import { isUserAIServer } from '../utils/axiosUtils';
+import { isUserAIServer, learningPhotosAIServer } from '../utils/axiosUtils';
 import { findByEmail } from '../dao/user';
 import { checkFirebase } from '../utils/firebase';
 import { uploadRoom, uploadPhotos } from '../utils/multerUtils';
-import { rootPhotoPath, roomPhotoPath } from '../vars';
+import { rootPhotoPath, userPhotoPath, roomPhotoPath } from '../vars';
 
 /**
  * 도둑 - [1]보물 수집, [2]금고에 보물 보관,
@@ -99,6 +99,23 @@ async function startGameMaster(req: Request, res: Response) {
         .json({ success: false, msg: `You are not master.` }); //준비
     } else {
       //방장이 시작
+      // 유저들 사진 ai-server에 학습
+      // const photoPath = rootPhotoPath + userPhotoPath + '/';
+      // for (let user of room.users) {
+      //   const aiServerResponse = await learningPhotosAIServer(
+      //     code,
+      //     photoPath + user.photoPath
+      //   );
+      //   console.log(aiServerResponse);
+      //   if (aiServerResponse == 200) {
+      //     continue;
+      //   } else {
+      //     return res.status(400).json({
+      //       success: false,
+      //       msg: `AI server can't prepare model ${user.email}`,
+      //     });
+      //   }
+      // }
       //게임 초기화
       // 1. 보물 위치
       let treasureArr: ITreasure = {};
@@ -338,39 +355,41 @@ async function catchRobber(req: Request, res: Response) {
       logger.info(`POST /game/robber | can't upload photo`);
       return res.status(200).json({ success: false });
     } else {
-      const aiServerResponse = await isUserAIServer(code);
-      if (!aiServerResponse) {
-        //못잡음
-        return res.status(200).json({ success: false });
-      } else {
-        //잡음
-        const nickname = aiServerResponse.nickname;
-        const gameUser = await GameDao.findGameUser(code, nickname);
-        if (!gameUser) {
-          return res.status(200).json({ success: false });
-        } else {
-          const treasures = await GameDao.findTreasureInfos(code);
-          const newTreasures = getTreasureArray(
-            gameUser.treasureCount,
-            Object.keys(treasures).length,
-            treasures
-          );
-          const isUpdatedTreasures = await GameDao.updateTreasureInfos(
-            code,
-            newTreasures
-          );
-          const isUpdatedUser = await GameDao.updateGameUser(
-            code,
-            nickname,
-            Role.TRAITOR,
-            0
-          );
-
-          return res
-            .status(200)
-            .json({ success: isUpdatedUser && isUpdatedTreasures });
-        }
-      }
+      return res.status(200).json({ success: true });
+      // const aiServerResponse = await isUserAIServer(code);
+      // console.log(aiServerResponse);
+      // if (!aiServerResponse) {
+      //   //못잡음
+      //   return res.status(200).json({ success: false });
+      // } else {
+      //   //잡음
+      //   const nickname = aiServerResponse.nickname;
+      //   console.log(nickname);
+      // const gameUser = await GameDao.findGameUser(code, nickname);
+      // if (!gameUser) {
+      //   return res.status(200).json({ success: false });
+      // } else {
+      //   const treasures = await GameDao.findTreasureInfos(code);
+      //   const newTreasures = getTreasureArray(
+      //     gameUser.treasureCount,
+      //     Object.keys(treasures).length,
+      //     treasures
+      //   );
+      //   const isUpdatedTreasures = await GameDao.updateTreasureInfos(
+      //     code,
+      //     newTreasures
+      //   );
+      //   const isUpdatedUser = await GameDao.updateGameUser(
+      //     code,
+      //     nickname,
+      //     Role.TRAITOR,
+      //     0
+      //   );
+      //   return res
+      //     .status(200)
+      //     .json({ success: isUpdatedUser && isUpdatedTreasures });
+      // }
+      // }
     }
   } catch (e) {
     logger.error(e.message);

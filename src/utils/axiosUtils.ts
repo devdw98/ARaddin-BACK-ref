@@ -35,10 +35,10 @@ export function isUserAIServer(code: string) {
   return axios
     .post(`${aiServer}/model/match`, {
       room_num: code,
-      path: `${rootPhotoPath}/${roomPhotoPath}/${code}`,
+      path: `${rootPhotoPath}${roomPhotoPath}/${code}`,
     })
     .then((response) => {
-      return JSON.parse(response.data['data']);
+      return response; //JSON.parse(response.data['data']);
     })
     .catch((err) => {
       logger.error(err.message);
