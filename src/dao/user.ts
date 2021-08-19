@@ -9,7 +9,6 @@ async function insert(user: User) {
     const ref = firestore.collection(collection);
     const info = user.get();
     const doc = await ref.doc(user.email).set(info);
-    console.log(`${doc.writeTime.toDate().getDate() - new Date().getDate()}`);
     return !(doc.writeTime.toDate().getDate() - new Date().getDate());
   } catch (e) {
     logger.error(e);
