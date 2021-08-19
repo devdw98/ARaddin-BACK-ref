@@ -1,94 +1,110 @@
-import { IRoom, ISetting, Place } from '../models/room';
+import { Setting } from '../models/room';
 import { firestore } from '../app';
-import { IRoomUser } from '../models/user';
+import { IUser, Master, User } from '../models/user';
 import logger from '../utils/logger';
 
 const collection = `rooms`;
+const room_id = `roomInfo`;
+const master_id = `master`;
+const setting_id = `setting`;
 
-function getRandomCode() {
-  const code =
-    Math.random().toString(36).substring(7, 10) +
-    Math.random().toString(36).substring(2, 5);
-  return code;
-}
-
-async function insert(master: IRoomUser) {
+export function setSetting(code: string, setting: Setting): Setting {
   try {
-    const ref = firestore.collection(collection);
-    // 방 초기 세팅
-    const setting: ISetting = {
-      goal: 10,
-      timeLimit: 10,
-      place: Place.UP,
-    };
-    const info: IRoom = {
-      code: getRandomCode(),
-      master: master,
-      users: [master],
-      setting: setting,
-    };
-    const doc = await ref.doc(info.code).set(info);
+    const ref = firestore
+      .collection(collection)
+      .doc(code)
+      .collection(room_id)
+      .doc(setting_id);
+    ref.set(setting.get());
 
-    return (await ref.doc(info.code).get()).data();
+    return setting;
   } catch (e) {
-    logger.error(e);
-  }
-}
-async function find(code: string) {
-  try {
-    const ref = firestore.collection(collection);
-    const doc = await ref.doc(code).get();
-    if (!doc.exists) {
-      return null; //방 없음
-    }
-    const data = await doc.data();
-    const room: IRoom = {
-      code: code,
-      master: data.master,
-      users: data.users,
-      setting: data.setting,
-    };
-    return room;
-  } catch (e) {
-    logger.error(e);
+    logger.error(e.message);
   }
 }
 
-async function update(
+export async function getSetting(code: string): Promise<Setting> {
+  const ref = firestore
+    .collection(collection)
+    .doc(code)
+    .collection(room_id)
+    .doc(setting_id)
+    .get();
+  if ((await ref).exists) {
+    const setting_data = (await ref).data();
+    const setting = new Setting(
+      setting_data.goal,
+      setting_data.timeLimit,
+      setting_data.place
+    );
+    return setting;
+  }
+  return null;
+}
+
+export async function setUsers(
   code: string,
-  setting?: ISetting,
-  users?: IRoomUser[],
-  master?: IRoomUser
-) {
+  users: Array<IUser>
+): Promise<IUser[]> {
   try {
-    const ref = firestore.collection(collection);
-    const obj: any = {}; //timestamp: new Date()
-    if (setting) {
-      obj.setting = setting;
-    }
-    if (users) {
-      obj.users = users;
-    }
-    if (master) {
-      obj.master = master;
-      obj.users = users;
-    }
-    const doc = await ref.doc(code).update(obj);
-    return !!doc.writeTime.toDate() ? (await ref.doc(code).get()).data() : null;
+    const ref = firestore.collection(collection).doc(code);
+    const result: Array<IUser> = await ref
+      .set({ users: users })
+      .then(async () => {
+        return (await ref.get()).data()['users'];
+      });
+    return result;
   } catch (e) {
-    logger.error(e);
-    return e;
+    logger.error(e.message);
   }
 }
-
-async function deleteRoom(code: string) {
+export async function getUsers(code: string): Promise<IUser[]> {
   try {
-    const ref = firestore.collection(collection);
-    const doc = await ref.doc(code).delete();
+    const ref = firestore.collection(collection).doc(code);
+    const users: Array<IUser> = (await ref.get()).data()['users'];
+    return users;
+  } catch (e) {
+    logger.error(e.message);
+  }
+}
+export async function setMaster(code: string, master: Master): Promise<Master> {
+  const ref = firestore
+    .collection(collection)
+    .doc(code)
+    .collection(room_id)
+    .doc(master_id);
+  ref.set(master.getMaster());
+  return master;
+}
+export async function getMaster(code: string): Promise<Master> {
+  const ref = firestore
+    .collection(collection)
+    .doc(code)
+    .collection(room_id)
+    .doc(master_id);
+  const data = (await ref.get()).data();
+  const master = new Master(new User(data.email, data.nickname), data.isReady);
+  return master;
+}
+
+export async function findRoomUsers(code: string): Promise<IUser[]> {
+  try {
+    const ref = firestore.collection(collection).doc(code).get();
+    if (!(await ref).exists) {
+      return null;
+    }
+    const datas: Array<User> = (await ref).data()['users'];
+    return datas;
+  } catch (e) {
+    logger.error(e.message);
+  }
+}
+export async function deleteRoom(code: string) {
+  try {
+    const ref = firestore.collection(collection).doc(code);
+    const doc = await ref.delete();
     return !!doc.writeTime;
   } catch (e) {
     logger.error(e);
   }
 }
-
-export { insert, find, update, deleteRoom };

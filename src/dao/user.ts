@@ -61,10 +61,7 @@ async function findByEmail(email: string) {
       return null;
     }
     const data = await doc.data();
-    const user: IUser = {
-      email: data.email,
-      nickname: data.nickname,
-    };
+    const user = new User(data.email, data.nickname);
     return user;
   } catch (e) {
     logger.error(e.message);

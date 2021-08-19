@@ -22,3 +22,19 @@ export class User {
     return user;
   }
 }
+
+export class Master extends User {
+  isReady: boolean;
+  constructor(user: User, isReady: boolean) {
+    super(user.email, user.nickname);
+    this.isReady = isReady;
+  }
+  getMaster() {
+    const master: IMaster = {
+      email: this.email,
+      nickname: this.nickname,
+      isReady: this.isReady,
+    };
+    return master;
+  }
+}

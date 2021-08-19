@@ -1,8 +1,8 @@
 import express, { Request, Response } from 'express';
-import { IRoomUser } from '../models/user';
+import { IUser, Master, User } from '../models/user';
 import * as yup from 'yup';
 import * as RoomDao from '../dao/room';
-import { Place, ISetting } from '../models/room';
+import { Place, Setting, Room } from '../models/room';
 import logger from '../utils/logger';
 import { learningPhotosAIServer } from '../utils/axiosUtils';
 import { checkFirebase } from '../utils/firebase';
@@ -15,6 +15,22 @@ async function getUser(token: string) {
   const user = await findByEmail(email);
   return user;
 }
+
+function getRandomCode() {
+  const code =
+    Math.random().toString(36).substring(7, 10) +
+    Math.random().toString(36).substring(2, 5);
+  return code;
+}
+
+async function getRoom(code: string, users?: Array<IUser>) {
+  const setting = await RoomDao.getSetting(code);
+  const master = await RoomDao.getMaster(code);
+  const getUsers = await RoomDao.getUsers(code);
+  const result = new Room(code, master, users ? users : getUsers, setting);
+  return result;
+}
+
 // [master] - 방만들기
 async function createRoom(req: Request, res: Response) {
   try {
@@ -25,22 +41,15 @@ async function createRoom(req: Request, res: Response) {
       logger.info(`POST /room/new | ` + failedLog);
       return res.status(400).json({ success: false, msg: failedLog });
     }
-    const master: IRoomUser = {
-      email: user.email,
-      nickname: user.nickname,
-      photoPath: user.photoPath,
-      isReady: false,
-    };
-    const room = await RoomDao.insert(master);
-    if (!room) {
-      logger.error(`POST /room/new | failed to create room.`);
-      return res
-        .status(400)
-        .json({ success: false, msg: `couldn't create room` });
-    }
+    const code = getRandomCode();
+    const master = await RoomDao.setMaster(code, new Master(user, false));
+    const setting = RoomDao.setSetting(code, new Setting());
+    RoomDao.setUsers(code, [user.get()]);
+    const room = new Room(code, master, [user], setting);
     logger.info(`POST /room/new | success! room code : ${room.code}`);
-    return res.status(201).json({ room });
+    return res.status(201).send(room);
   } catch (e) {
+    logger.error(e.message);
     return res.status(400).json({ success: false, msg: e.message });
   }
 }
@@ -62,30 +71,24 @@ async function changeSetting(req: Request, res: Response) {
     const user = await getUser(token);
     if (!user) {
       const failedLog = `can't find user`;
-      logger.info(`POST /room/new | ` + failedLog);
+      logger.info(`PUT /room | ` + failedLog);
       return res.status(400).json({ success: false, msg: failedLog });
     }
-    const room = await RoomDao.find(code);
-    if (!room) {
+    const master = await RoomDao.getMaster(code);
+    const roomUser = await RoomDao.findRoomUsers(code);
+    if (!roomUser) {
       const failedLog = `Failed to find room code : ${code}.`;
       logger.info(`PUT /room | ` + failedLog);
       return res.status(400).json({ success: false, msg: failedLog });
     }
-    if (room.master.nickname === user.nickname) {
-      // 방장인 경우만 변경 가능
-      const setting: ISetting = { goal, timeLimit, place };
-      const update = await RoomDao.update(code, setting);
-      logger.info(`PUT /room | success to change room setting! code : ${code}`);
-      return res.status(200).json({ setting: update.setting });
-    } else if (
-      room.users.filter((isExisted) => isExisted.nickname !== user.nickname)
-    ) {
-      logger.info(
-        `PUT /room | failed to change room setting! code : ${code} - you are not existed in the room.`
+    if (master.nickname === user.nickname) {
+      // 방장인 경우
+      const setting = await RoomDao.setSetting(
+        code,
+        new Setting(goal, timeLimit, place)
       );
-      return res
-        .status(400)
-        .json({ success: false, msg: `you are not existed in the room.` });
+      logger.info(`PUT /room | success to change room setting! code : ${code}`);
+      return res.status(200).json({ setting: setting });
     } else {
       logger.info(
         `PUT /room | failed to change room setting! code : ${code} - you are not master.`
@@ -95,7 +98,8 @@ async function changeSetting(req: Request, res: Response) {
         .json({ success: false, msg: `you are not master.` });
     }
   } catch (e) {
-    return res.status(400).json({ success: false, msg: e });
+    logger.error(e.message);
+    return res.status(400).json({ success: false, msg: e.message });
   }
 }
 // [player] 방 입장
@@ -109,31 +113,27 @@ async function enterRoom(req: Request, res: Response) {
       logger.info(`POST /room/new | ` + failedLog);
       return res.status(400).json({ success: false, msg: failedLog });
     }
-    const room = await RoomDao.find(code);
-    if (!room) {
+    const users = await RoomDao.findRoomUsers(code);
+    if (!users) {
       //방 없음
       logger.info(`POST /room | You can't find room code : ${code}`);
       return res
         .status(400)
         .json({ success: false, msg: `Can't find room : ${code}` });
     } else {
-      const player: IRoomUser = {
-        email: user.email,
-        nickname: user.nickname,
-        photoPath: user.photoPath,
-        isReady: false,
-      };
-      room.users = room.users.concat([player]);
-      const result = await RoomDao.update(code, null, room.users);
+      users.push(user.get());
+      const result = RoomDao.setUsers(code, users).then((data) => {
+        return getRoom(code, data);
+      });
       logger.info(`POST /room | Success to enter room code : ${code}`);
-      return res.status(200).json({ room: result });
+      return res.status(200).json({ room: await result });
     }
   } catch (e) {
     logger.error(e);
     return res.status(400).json({ success: false, msg: e });
   }
 }
-
+// TODO : collection 삭제 구현하기
 async function leaveRoom(req: Request, res: Response) {
   try {
     const code = codeSchema.validateSync(req.query.code);
@@ -144,22 +144,21 @@ async function leaveRoom(req: Request, res: Response) {
       logger.info(`POST /room/new | ` + failedLog);
       return res.status(400).json({ success: false, msg: failedLog });
     }
-    const room = await RoomDao.find(code);
-    if (!room) {
+    let users = await RoomDao.findRoomUsers(code);
+    let master = await RoomDao.getMaster(code);
+    if (!users) {
       logger.info(`DELETE /room | Failed! Can't find room code : ${code}`);
       return res
         .status(400)
         .json({ success: false, msg: `Can't find room ${code}` });
     } else {
-      room.users = room.users.filter(
-        (exitUser) => exitUser.nickname !== user.nickname
-      );
-
-      if (room.master.nickname === user.nickname) {
+      users = users.filter((exitUser) => exitUser.nickname !== user.nickname);
+      //   console.log(users);
+      RoomDao.setUsers(code, users);
+      if (master.nickname === user.nickname) {
         //방장이 나감
-        room.master = room.users[0];
-        if (room.users.length < 1) {
-          // 방장 밖에 없음
+        if (users.length < 1) {
+          // 방장 밖에 없음 - 방 삭제
           logger.info(`DELETE /room | success to delete room code : ${code}`);
           return (await RoomDao.deleteRoom(code))
             ? res.status(204).json({})
@@ -167,8 +166,9 @@ async function leaveRoom(req: Request, res: Response) {
                 .status(400)
                 .json({ success: false, msg: `Couldn't delete room ${code}` });
         }
+        master = new Master(new User(users[0].email, users[0].nickname), false);
+        RoomDao.setMaster(code, master);
       }
-      const result = await RoomDao.update(code, null, room.users, room.master);
       logger.info(`DELETE /room | success to leave room code : ${code}`);
       return res.status(204).json({});
     }
@@ -178,26 +178,16 @@ async function leaveRoom(req: Request, res: Response) {
   }
 }
 
-async function findSettingInfo(req: Request, res: Response) {
+async function getRoomInfo(req: Request, res: Response) {
   const code = codeSchema.validateSync(req.query.code);
-  const room = await RoomDao.find(code);
-  if (!room) {
-    //방 없음
-    logger.info(`GET /room | You can't find room code : ${code}`);
-    return res
-      .status(400)
-      .json({ success: false, msg: `Can't find room : ${code}` });
-  } else {
-    const result = await RoomDao.find(code);
-    logger.info(`GET /room | Success to get room setting code : ${code}`);
-    return res.status(200).json({ setting: result.setting });
-  }
+  const room = await getRoom(code);
+  return res.status(200).json({ room });
 }
 const router = express.Router();
 router.post('/new', createRoom);
 router.put('/', changeSetting);
 router.post('/', enterRoom);
 router.delete('/', leaveRoom);
-router.get('/', findSettingInfo);
+router.get('/', getRoomInfo);
 
 export { router as roomRouter };
