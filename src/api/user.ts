@@ -37,7 +37,7 @@ async function login(req: Request, res: Response) {
     const files = req.files as Express.Multer.File[];
     const isUpload = uploadPhotos(
       rootPhotoPath + userPhotoPath,
-      user.photoPath,
+      user.nickname,
       files
     );
     if (!isUpload) {

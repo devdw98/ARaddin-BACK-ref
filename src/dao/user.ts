@@ -46,7 +46,6 @@ async function findByPhotoPath(photoPath: string) {
     const user: IUser = {
       email: data.email,
       nickname: data.nickname,
-      photoPath: photoPath,
     };
     return user;
   } catch (e) {
@@ -65,7 +64,6 @@ async function findByEmail(email: string) {
     const user: IUser = {
       email: data.email,
       nickname: data.nickname,
-      photoPath: data.photoPath,
     };
     return user;
   } catch (e) {
