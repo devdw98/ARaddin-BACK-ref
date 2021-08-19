@@ -1,13 +1,13 @@
 import logger from '../utils/logger';
 import { firestore } from '../app';
-import { IUser } from '../models/user';
+import { IUser, User } from '../models/user';
 
 const collection = `users`;
 
-async function insert(user: IUser) {
+async function insert(user: User) {
   try {
     const ref = firestore.collection(collection);
-    const info = user;
+    const info = user.get();
     const doc = await ref.doc(user.email).set(info);
     console.log(`${doc.writeTime.toDate().getDate() - new Date().getDate()}`);
     return !(doc.writeTime.toDate().getDate() - new Date().getDate());
@@ -16,34 +16,20 @@ async function insert(user: IUser) {
   }
 }
 
-async function find(user: IUser) {
+async function isExisted(user: User) {
   try {
     const ref = firestore.collection(collection);
     const doc = await ref.doc(user.email).get();
-    if (!doc.exists) {
-      return null; //사용자 없음
-    }
-    const data = await doc.data();
-    return user;
+    return doc.exists;
   } catch (e) {
     logger.error(e);
   }
 }
-async function findAndUpdate(user: IUser) {
+async function update(user: User) {
   try {
-    const ref = firestore.collection(collection);
-    const doc = await ref.doc(user.email).get();
-    if (!doc.exists) {
-      return null; //사용자 없음
-    }
-    const data = await doc.data();
-    if (data.nickname !== user.nickname) {
-      const updateDoc = await ref
-        .doc(user.email)
-        .update({ nickname: user.nickname });
-      return updateDoc ? user : null;
-    }
-    return user;
+    const ref = firestore.collection(collection).doc(user.email);
+    const updateDoc = await ref.update({ nickname: user.nickname });
+    return updateDoc ? user : null;
   } catch (e) {
     logger.error(e);
   }
@@ -86,4 +72,4 @@ async function findByEmail(email: string) {
     logger.error(e.message);
   }
 }
-export { insert, findAndUpdate, findByPhotoPath, findByEmail };
+export { isExisted, insert, update, findByPhotoPath, findByEmail };

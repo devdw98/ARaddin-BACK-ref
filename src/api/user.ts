@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import logger from '../utils/logger';
 import * as yup from 'yup';
-import { IUser } from '../models/user';
+import { User, IUser } from '../models/user';
 import { checkFirebase } from '../utils/firebase';
 import * as UserDao from '../dao/user';
 import { rootPhotoPath, userPhotoPath } from '../vars';
@@ -24,21 +24,20 @@ async function login(req: Request, res: Response) {
         .status(400)
         .json({ success: false, msg: `email isn't valid.` });
     }
-    const photoPath = email.split('@')[0];
-    const user: IUser = { email, nickname, photoPath: photoPath };
-    let isExisted = await UserDao.findAndUpdate(user);
-    if (!isExisted) {
+    const user = new User(email, nickname);
+    if (!(await UserDao.isExisted(user))) {
       // 기존 사용자 없음
       const isEnrolled = await UserDao.insert(user);
       logger.info(`POST /user | CREATE USER ${nickname} - ${isEnrolled}`);
     } else {
-      logger.info(`POST /user | LOGIN USER ${nickname}`);
+      const isUpdate = await UserDao.update(user);
+      logger.info(`POST /user | LOGIN USER ${nickname} - ${isUpdate.nickname}`);
     }
     // photos upload + AI server encoding photos
     const files = req.files as Express.Multer.File[];
     const isUpload = uploadPhotos(
       rootPhotoPath + userPhotoPath,
-      photoPath,
+      user.photoPath,
       files
     );
     if (!isUpload) {
