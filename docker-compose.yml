@@ -6,15 +6,12 @@ services:
     image: araddin:${mainTag}
     volumes:
       - /photos:/photos
-      - ./:/app
     ports:
       - 3000:3000
-    links:
-      - ai-server
+    # links:
+    #   - ai-server
     networks:
       - capston_net
-    # command:
-    #   - npm start
   # ai-server:
   #   container_name: araddin-ai
   #   image: ai:${aiTag}
