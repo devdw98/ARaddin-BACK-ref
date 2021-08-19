@@ -1,47 +1,25 @@
 import express, { Request, Response } from 'express';
-import { IUser, Master, User } from '../models/user';
+import { Master, User } from '../models/user';
 import * as yup from 'yup';
 import * as RoomDao from '../dao/room';
 import { Place, Setting, Room } from '../models/room';
 import logger from '../utils/logger';
 import { learningPhotosAIServer } from '../utils/axiosUtils';
-import { checkFirebase } from '../utils/firebase';
-import { findByEmail } from '../dao/user';
+import * as Service from '../utils/service';
 
 const tokenScheme = yup.string().required();
-
-async function getUser(token: string) {
-  const email = await checkFirebase(token);
-  const user = await findByEmail(email);
-  return user;
-}
-
-function getRandomCode() {
-  const code =
-    Math.random().toString(36).substring(7, 10) +
-    Math.random().toString(36).substring(2, 5);
-  return code;
-}
-
-async function getRoom(code: string, users?: Array<IUser>) {
-  const setting = await RoomDao.getSetting(code);
-  const master = await RoomDao.getMaster(code);
-  const getUsers = await RoomDao.getUsers(code);
-  const result = new Room(code, master, users ? users : getUsers, setting);
-  return result;
-}
 
 // [master] - 방만들기
 async function createRoom(req: Request, res: Response) {
   try {
     const token = tokenScheme.validateSync(req.headers.token);
-    const user = await getUser(token);
+    const user = await Service.getUser(token);
     if (!user) {
       const failedLog = `can't find user`;
       logger.info(`POST /room/new | ` + failedLog);
       return res.status(400).json({ success: false, msg: failedLog });
     }
-    const code = getRandomCode();
+    const code = Service.getRandomCode();
     const master = await RoomDao.setMaster(code, new Master(user, false));
     const setting = RoomDao.setSetting(code, new Setting());
     RoomDao.setUsers(code, [user.get()]);
@@ -68,7 +46,7 @@ async function changeSetting(req: Request, res: Response) {
       req.body
     );
     const token = tokenScheme.validateSync(req.headers.token);
-    const user = await getUser(token);
+    const user = await Service.getUser(token);
     if (!user) {
       const failedLog = `can't find user`;
       logger.info(`PUT /room | ` + failedLog);
@@ -107,7 +85,7 @@ async function enterRoom(req: Request, res: Response) {
   try {
     const code = codeSchema.validateSync(req.query.code);
     const token = tokenScheme.validateSync(req.headers.token);
-    const user = await getUser(token);
+    const user = await Service.getUser(token);
     if (!user) {
       const failedLog = `can't find user`;
       logger.info(`POST /room/new | ` + failedLog);
@@ -123,7 +101,7 @@ async function enterRoom(req: Request, res: Response) {
     } else {
       users.push(user.get());
       const result = RoomDao.setUsers(code, users).then((data) => {
-        return getRoom(code, data);
+        return Service.getRoom(code, data);
       });
       logger.info(`POST /room | Success to enter room code : ${code}`);
       return res.status(200).json({ room: await result });
@@ -138,7 +116,7 @@ async function leaveRoom(req: Request, res: Response) {
   try {
     const code = codeSchema.validateSync(req.query.code);
     const token = tokenScheme.validateSync(req.headers.token);
-    const user = await getUser(token);
+    const user = await Service.getUser(token);
     if (!user) {
       const failedLog = `can't find user`;
       logger.info(`POST /room/new | ` + failedLog);
@@ -180,7 +158,7 @@ async function leaveRoom(req: Request, res: Response) {
 
 async function getRoomInfo(req: Request, res: Response) {
   const code = codeSchema.validateSync(req.query.code);
-  const room = await getRoom(code);
+  const room = await Service.getRoom(code);
   return res.status(200).json({ room });
 }
 const router = express.Router();
