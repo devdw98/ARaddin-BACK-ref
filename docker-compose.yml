@@ -8,19 +8,19 @@ services:
       - /photos:/photos
     ports:
       - 3000:3000
-    # links:
-    #   - ai-server
+    links:
+      - ai-server
     networks:
       - capston_net
-  # ai-server:
-  #   container_name: araddin-ai
-  #   image: ai:${aiTag}
-  #   volumes:
-  #     - /photos:/photos
-  #   ports:
-  #     - 8000:8000
-  #   networks:
-  #     - capston_net
+  ai-server:
+    container_name: araddin-ai
+    image: araddin-ai:${aiTag}
+    volumes:
+      - /photos:/photos
+    ports:
+      - 8000:8000
+    networks:
+      - capston_net
   # command:
   #   - python manage.py runserver 0.0.0.0:8000
 
