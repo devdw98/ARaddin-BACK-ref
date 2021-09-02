@@ -1,12 +1,14 @@
 import { Setting } from '../models/room';
 import { firestore } from '../app';
 import { IUser, Master, User } from '../models/user';
+import { IGame } from '../models/game';
 import logger from '../utils/logger';
 
 const collection = `rooms`;
 const room_id = `roomInfo`;
 const master_id = `master`;
 const setting_id = `setting`;
+const game_id = `game`;
 
 export function setSetting(code: string, setting: Setting): Setting {
   try {
@@ -106,5 +108,33 @@ export async function deleteRoom(code: string) {
     return !!doc.writeTime;
   } catch (e) {
     logger.error(e);
+  }
+}
+
+export async function setGame(code: string, gameInfo: IGame) {
+  try {
+    const ref = firestore
+      .collection(collection)
+      .doc(code)
+      .collection(room_id)
+      .doc(game_id);
+    ref.set(gameInfo);
+  } catch (e) {
+    logger.error(e.message);
+  }
+}
+
+export async function getGame(code: string) {
+  try {
+    const ref = firestore
+      .collection(collection)
+      .doc(code)
+      .collection(room_id)
+      .doc(game_id)
+      .get();
+    const data = (await ref).data();
+    return data.winTeam;
+  } catch (e) {
+    logger.error(e.message);
   }
 }

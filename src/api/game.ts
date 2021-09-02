@@ -12,6 +12,7 @@ import { rootPhotoPath, userPhotoPath, roomPhotoPath } from '../vars';
 import * as Service from '../utils/service';
 import { Master } from '../models/user';
 import { User } from '../models/user';
+import { IGame } from '../models/game';
 
 /**
  * 도둑 - [1]보물 수집, [2]금고에 보물 보관,
@@ -66,6 +67,12 @@ async function startGameMaster(req: Request, res: Response) {
       //   }
       // }
       //게임 초기화
+      // 0. game 정보 초기화
+      const gameInfo: IGame = {
+        finish: false,
+        winTeam: Role.NOT,
+      };
+      RoomDao.setGame(code, gameInfo);
       // 1. 보물 위치
       let treasureArr: ITreasure = {};
       for (let i = 0; i < Service.MAX_TREASURE_NUM; i++) {
@@ -218,13 +225,15 @@ async function keepTreasureInCabinet(req: Request, res: Response) {
     }
     const gameUser = await GameDao.findGameUser(code, user.nickname);
     const cabinets = await GameDao.findCabinetInfos(code);
+    const setting = await RoomDao.getSetting(code);
     if (cabinets[id].state) {
       // 열린 금고일 때만
+      const count = cabinets[id].treasureCount + gameUser.treasureCount;
       const isUpdatedCabinet = await GameDao.updateCabinetInfo(
         code,
         id,
         true,
-        cabinets[id].treasureCount + gameUser.treasureCount
+        count
       );
       const isUpdatedUser = await GameDao.updateGameUser(
         code,
@@ -232,6 +241,13 @@ async function keepTreasureInCabinet(req: Request, res: Response) {
         gameUser.role,
         0
       );
+      if (count >= setting.goal) {
+        const gameInfo: IGame = {
+          finish: true,
+          winTeam: Role.THIEF,
+        };
+        RoomDao.setGame(code, gameInfo);
+      }
       return isUpdatedCabinet && isUpdatedUser //반환값 상의
         ? res.status(200).json({ state: true })
         : res.status(400).json({ state: false });
@@ -268,6 +284,26 @@ async function findCabinet(req: Request, res: Response) {
     } else {
       return res.status(200).json({ success: false });
     }
+  } catch (e) {
+    logger.error(e);
+    return res.status(400).json({ success: false, msg: e.message });
+  }
+}
+async function findTreasureCount(req: Request, res: Response) {
+  try {
+    const code: string = codeSchema.validateSync(req.query.code);
+    const cabinets = await GameDao.findCabinetInfos(code);
+    let treasureCount = 0;
+    for (const cabinet of Object.keys(cabinets)) {
+      if (cabinets[cabinet].state) {
+        treasureCount = cabinets[cabinet].treasureCount;
+        break;
+      }
+    }
+    logger.info(
+      `GET /cabinet | code = ${code}, treasureCount = ${treasureCount}`
+    );
+    return res.status(200).json({ treasureCount: treasureCount });
   } catch (e) {
     logger.error(e);
     return res.status(400).json({ success: false, msg: e.message });
@@ -327,8 +363,23 @@ async function catchRobber(req: Request, res: Response) {
 }
 
 // 게임 끝
-function endGame(req: Request, res: Response) {
+async function endGame(req: Request, res: Response) {
   try {
+    const code: string = codeSchema.validateSync(req.query.code);
+    const token = tokenScheme.validateSync(req.headers.token);
+    const user = await Service.getUser(token);
+    if (!user) {
+      const failedLog = `can't find user`;
+      logger.info(`POST /game | ` + failedLog);
+      return res.status(400).json({ success: false, msg: failedLog });
+    }
+    const gameUser = await GameDao.findGameUser(code, user.nickname);
+    const winTeam = await RoomDao.getGame(code);
+    const result = gameUser.role == winTeam;
+    logger.info(`GET /game/end | finish game. win team is ${Role[winTeam]}`);
+    return res.status(200).json({
+      win: result,
+    });
   } catch (e) {
     logger.error(e);
     return res.status(400).json({ success: false, msg: e.message });
@@ -343,7 +394,8 @@ router.get('/treasure/:id', stateOfTreasure);
 router.put('/treasure/:id', findTreasure);
 router.put('/cabinet/:id', keepTreasureInCabinet);
 router.post('/cabinet/:id', findCabinet);
+router.get('/cabinet', findTreasureCount);
 // router.post('/robber', [uploadRoom.array('photos')], catchRobber);
-router.get('/', endGame); // 게임 종료 - TODO
+router.get('/end', endGame); // 게임 종료 - TODO
 
 export { router as gameRouter };
