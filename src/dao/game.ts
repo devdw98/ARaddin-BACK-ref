@@ -1,6 +1,5 @@
 import { ICabinet } from '../models/cabinet';
 import { firestore } from '../app';
-import { IGame } from '../models/game';
 import { IGameUser, Role } from '../models/gameUser';
 import { ITreasure } from '../models/treasure';
 
