@@ -5,11 +5,16 @@ import { IUser } from '../models/user';
 import { Room } from '../models/room';
 import { ICabinet } from '../models/cabinet';
 import { ITreasure } from '../models/treasure';
+import logger from './logger';
 
 export async function getUser(token: string) {
-  const email = await checkFirebase(token);
-  const user = await findByEmail(email);
-  return user;
+  try {
+    const email = await checkFirebase(token);
+    const user = await findByEmail(email);
+    return user;
+  } catch (e) {
+    logger.error(e.message);
+  }
 }
 
 export function getRandomCode() {
