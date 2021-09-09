@@ -1,11 +1,12 @@
 import { Setting } from '../models/room';
 import { firestore } from '../app';
-import { IUser, Master, User } from '../models/user';
+import { IUser, Master, User, GameUser } from '../models/user';
 import { IGame } from '../models/game';
 import logger from '../utils/logger';
 
 const collection = `rooms`;
 const room_id = `roomInfo`;
+const users_id = `usersInfo`;
 const master_id = `master`;
 const setting_id = `setting`;
 const game_id = `game`;
@@ -42,6 +43,17 @@ export async function getSetting(code: string): Promise<Setting> {
     return setting;
   }
   return null;
+}
+
+export async function setUser(code: string, user: User): Promise<GameUser> {
+  const gameUser = new GameUser(user);
+  try {
+    const ref = firestore.collection(collection).doc(code).collection(users_id);
+    ref.doc(gameUser.nickname).set(gameUser.getInfos());
+    return gameUser;
+  } catch (e) {
+    logger.error(e.message);
+  }
 }
 
 export async function setUsers(
