@@ -2,6 +2,7 @@ import { ICabinet } from '../models/cabinet';
 import { firestore } from '../app';
 import { IGameUser, Role } from '../models/gameUser';
 import { ITreasure } from '../models/treasure';
+import { GameUser } from '../models/user';
 
 const upperCollection = `rooms`;
 const subCollection = `game`;
@@ -105,19 +106,12 @@ export async function findGameUser(code: string, nickname: string) {
   return user[nickname];
 }
 
-export async function updateGameUser(
-  code: string,
-  nickname: string,
-  role: Role,
-  count: number
-) {
+export async function updateGameUser(code: string, user: GameUser) {
   const ref = firestore
     .collection(upperCollection)
     .doc(code)
     .collection(users_id);
-  const doc = await ref
-    .doc(nickname)
-    .update({ role: role, treasureCount: count });
+  const doc = await ref.doc(user.nickname).update(user.getInfos());
   return !!doc;
 }
 
