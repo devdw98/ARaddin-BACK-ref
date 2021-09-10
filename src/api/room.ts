@@ -54,12 +54,6 @@ async function changeSetting(req: Request, res: Response) {
       return res.status(400).json({ success: false, msg: failedLog });
     }
     const master = await RoomDao.getMaster(code);
-    // const roomUser = await RoomDao.findRoomUsers(code);
-    // if (!roomUser) {
-    //   const failedLog = `Failed to find room code : ${code}.`;
-    //   logger.info(`PUT /room | ` + failedLog);
-    //   return res.status(400).json({ success: false, msg: failedLog });
-    // }
     if (master.nickname === user.nickname) {
       // 방장인 경우
       const setting = await RoomDao.setSetting(
@@ -133,13 +127,14 @@ async function leaveRoom(req: Request, res: Response) {
         .json({ success: false, msg: `Can't find room ${code}` });
     } else {
       users = users.filter((exitUser) => exitUser.nickname !== user.nickname);
-      //   console.log(users);
       RoomDao.setUsers(code, users);
+      RoomDao.deleteUser(code, user);
       if (master.nickname === user.nickname) {
         //방장이 나감
         if (users.length < 1) {
           // 방장 밖에 없음 - 방 삭제
           logger.info(`DELETE /room | success to delete room code : ${code}`);
+          // RoomDao.deleteSetting(code);
           return (await RoomDao.deleteRoom(code))
             ? res.status(204).json({})
             : res
