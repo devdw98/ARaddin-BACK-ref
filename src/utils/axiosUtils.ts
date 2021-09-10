@@ -1,11 +1,11 @@
 import axios from 'axios';
-import { rootPhotoPath, roomPhotoPath, aiServer } from '../vars';
+import { rootPhotoPath,userPhotoPath, roomPhotoPath, aiServer } from '../vars';
 import logger from './logger';
 
-export function photoEncodingAIServer(userPhotoPath: string) {
+export function photoEncodingAIServer(usernamePhotoPath: string) {
   return axios
     .post(`${aiServer}/model/encode`, {
-      path: `${rootPhotoPath + userPhotoPath}/${userPhotoPath}`,
+      path: `${rootPhotoPath + userPhotoPath}/${usernamePhotoPath}`,
     })
     .then((response) => {
       return response.status;

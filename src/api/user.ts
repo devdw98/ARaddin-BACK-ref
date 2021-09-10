@@ -44,23 +44,25 @@ async function login(req: Request, res: Response) {
       return res
         .status(400)
         .json({ success: false, msg: 'Failed photo upload' });
+    }else{
+      const aiServerResponse = await photoEncodingAIServer(
+        user.nickname
+      );
+      if (aiServerResponse === 201) {
+      return res.status(201).json({
+        user: {
+          email: user.email,
+          nickname: user.nickname,
+        },
+      });
+      } else {
+        return res.status(400).json({
+          success: false,
+          msg: 'Failed photo upload AI Server',
+        });
+      }
     }
-    // const aiServerResponse = await photoEncodingAIServer(
-    //   rootPhotoPath + userPhotoPath + '/' + photoPath
-    // );
-    // if (aiServerResponse === 201) {
-    return res.status(201).json({
-      user: {
-        email: user.email,
-        nickname: user.nickname,
-      },
-    });
-    // } else {
-    //   return res.status(400).json({
-    //     success: false,
-    //     msg: 'Failed photo upload AI Server',
-    //   });
-    // }
+    
   } catch (e) {
     logger.error(e);
     return res.status(400).json({ success: false, msg: e.message });
