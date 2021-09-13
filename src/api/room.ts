@@ -5,7 +5,7 @@ import * as Service from '../utils/service';
 import { Master, User } from '../models/user';
 import { Place, Setting, Room } from '../models/room';
 import * as RoomDao from '../dao/room';
-import { copyDirectory,deleteDirectory } from '../utils/multerUtils';
+import { copyDirectory, deleteDirectory } from '../utils/multerUtils';
 
 const tokenScheme = yup.string().required();
 
@@ -133,11 +133,11 @@ async function leaveRoom(req: Request, res: Response) {
       // delete user's collection
       RoomDao.deleteUser(code, user);
       deleteDirectory('rooms', `${code}/${user.nickname}`);
-      if (master.nickname === user.nickname){
+      if (master.nickname === user.nickname) {
         //방장이 나감
         if (users.length < 1) {
           // 방장 밖에 없음 - 방 삭제
-          deleteDirectory('rooms',`${code}`);
+          deleteDirectory('rooms', `${code}`);
           logger.info(`DELETE /room | success to delete room code : ${code}`);
           return (await RoomDao.deleteRoom(code))
             ? res.status(204).json({})

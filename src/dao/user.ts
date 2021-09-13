@@ -4,7 +4,7 @@ import { IUser, User } from '../models/user';
 
 const collection = `users`;
 
-async function insert(user: User):Promise<boolean> {
+async function insert(user: User): Promise<boolean> {
   try {
     const ref = firestore.collection(collection);
     const info = user.get();
@@ -24,7 +24,7 @@ async function isExisted(user: User): Promise<boolean> {
     logger.error(e);
   }
 }
-async function update(user: User):Promise<User> {
+async function update(user: User): Promise<User> {
   try {
     const ref = firestore.collection(collection).doc(user.email);
     const updateDoc = await ref.update({ nickname: user.nickname });
@@ -34,7 +34,7 @@ async function update(user: User):Promise<User> {
   }
 }
 
-async function findByPhotoPath(photoPath: string):Promise<User> {
+async function findByPhotoPath(photoPath: string): Promise<User> {
   try {
     const ref = firestore.collection(collection);
     const doc = await ref.doc(photoPath + '@gmail.com').get();
@@ -49,7 +49,7 @@ async function findByPhotoPath(photoPath: string):Promise<User> {
   }
 }
 
-async function findByEmail(email: string):Promise<User> {
+async function findByEmail(email: string): Promise<User> {
   try {
     const ref = firestore.collection(collection);
     const doc = await ref.doc(email).get();

@@ -1,22 +1,21 @@
-
 import { Role } from './user';
 export interface IGame {
   finish: boolean;
   winTeam: Role;
 }
 
-export class Game{
+export class Game {
   finish: boolean;
   winTeam: Role;
-  constructor(finish: boolean = false, winTeam: Role=Role.NOT){
+  constructor(finish: boolean = false, winTeam: Role = Role.NOT) {
     this.finish = finish;
     this.winTeam = winTeam;
   }
-  get(){
-    const game : IGame={
+  get() {
+    const game: IGame = {
       finish: this.finish,
-      winTeam: this.winTeam
-    }
+      winTeam: this.winTeam,
+    };
     return game;
   }
 }

@@ -9,13 +9,21 @@ const cabinet_id = 'cabinetInfo';
 const treasure_id = 'treasuresInfo';
 const users_id = 'usersInfo';
 
-export async function setCabinet(code: string, id: number, cabinet: Cabinet){
-  const ref = firestore.collection(upperCollection).doc(code).collection(cabinet_id).doc(`index_${id}`);
-  const  result = await ref.set(cabinet.get());
+export async function setCabinet(code: string, id: number, cabinet: Cabinet) {
+  const ref = firestore
+    .collection(upperCollection)
+    .doc(code)
+    .collection(cabinet_id)
+    .doc(`index_${id}`);
+  const result = await ref.set(cabinet.get());
   return !!result.writeTime;
 }
-export async function getCabinet(code: string, id: string){
-  const ref = firestore.collection(upperCollection).doc(code).collection(cabinet_id).doc(id);
+export async function getCabinet(code: string, id: string) {
+  const ref = firestore
+    .collection(upperCollection)
+    .doc(code)
+    .collection(cabinet_id)
+    .doc(id);
   const result = (await ref.get()).data();
   return new Cabinet(result['state'], result['treasureCount']);
 }
@@ -54,9 +62,9 @@ export async function updateCabinetInfo(
   const ref = firestore
     .collection(upperCollection)
     .doc(code)
-    .collection(cabinet_id).doc(id);
-  const doc = await ref
-    .update(cabinet.get());
+    .collection(cabinet_id)
+    .doc(id);
+  const doc = await ref.update(cabinet.get());
   return !!doc;
 }
 
@@ -114,9 +122,13 @@ export async function findGameUser(code: string, nickname: string) {
   const ref = firestore
     .collection(upperCollection)
     .doc(code)
-    .collection(users_id).doc(nickname);
+    .collection(users_id)
+    .doc(nickname);
   const data = await (await ref.get()).data();
-  const user = new GameUser(new User(data['email'], nickname), {role: data['role'], treasureCount: data['treasureCount']});
+  const user = new GameUser(new User(data['email'], nickname), {
+    role: data['role'],
+    treasureCount: data['treasureCount'],
+  });
   return user;
 }
 
@@ -129,8 +141,11 @@ export async function updateGameUser(code: string, user: GameUser) {
   return !!doc;
 }
 
-export async function findGameUsers(code: string){
-  const ref = firestore.collection(upperCollection).doc(code).collection(users_id);
-  const data = await ref.where('role','==',0).get();
+export async function findGameUsers(code: string) {
+  const ref = firestore
+    .collection(upperCollection)
+    .doc(code)
+    .collection(users_id);
+  const data = await ref.where('role', '==', 0).get();
   return data.size;
 }

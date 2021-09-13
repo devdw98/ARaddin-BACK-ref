@@ -17,6 +17,6 @@ export const {
     rootPhotoPath: yup.string(),
     userPhotoPath: yup.string(),
     roomPhotoPath: yup.string(),
-    aiServer: yup.string().default("http://localhost:8000"),
+    aiServer: yup.string().default('http://localhost:8000'),
   })
   .validateSync(process.env);

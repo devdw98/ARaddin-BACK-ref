@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { rootPhotoPath,userPhotoPath, roomPhotoPath, aiServer } from '../vars';
+import { rootPhotoPath, userPhotoPath, roomPhotoPath, aiServer } from '../vars';
 import logger from './logger';
 
 export function photoEncodingAIServer(usernamePhotoPath: string) {

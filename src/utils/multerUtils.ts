@@ -35,8 +35,8 @@ export const uploadRoom = multer({ storage: roomStorage });
 
 export function uploadPhotos(
   pipe: string,
-  photoPath:string,
-  files: Express.Multer.File[],
+  photoPath: string,
+  files: Express.Multer.File[]
 ) {
   try {
     const path = `${rootPhotoPath}${pipe}`;
@@ -62,47 +62,50 @@ export function uploadPhotos(
   }
 }
 
-export function copyDirectory(code: string, nickname: string){
-  try{
+export function copyDirectory(code: string, nickname: string) {
+  try {
     const userPath = `${rootPhotoPath}${userPhotoPath}/${nickname}`;
     const roomPath = `${rootPhotoPath}${roomPhotoPath}/${code}`;
-    const userRoomPath = roomPath+`/${nickname}`;
+    const userRoomPath = roomPath + `/${nickname}`;
     const isExisted = fs.existsSync(roomPath);
-    if(!isExisted){
-      fs.mkdirSync(roomPath, {recursive: true});
+    if (!isExisted) {
+      fs.mkdirSync(roomPath, { recursive: true });
     }
-    fs.mkdir(userRoomPath,()=>{
-        const filenames = fs.readdirSync(userPath);
-      for(const filename of filenames){
-        if(filename.includes(".npy")){
-          fs.copyFileSync(`${userPath}/${filename}`, `${userRoomPath}/${filename}`);
+    fs.mkdir(userRoomPath, () => {
+      const filenames = fs.readdirSync(userPath);
+      for (const filename of filenames) {
+        if (filename.includes('.npy')) {
+          fs.copyFileSync(
+            `${userPath}/${filename}`,
+            `${userRoomPath}/${filename}`
+          );
         }
       }
-    })
-  }catch(e){
+    });
+  } catch (e) {
     logger.error(e.message);
     return false;
   }
 }
 
-export function deleteDirectory(type: string, photoPath: string){
+export function deleteDirectory(type: string, photoPath: string) {
   const path = `${rootPhotoPath}/${type}/${photoPath}`;
   const isExisted = fs.existsSync(path);
-  if(!isExisted) return false;
+  if (!isExisted) return false;
   const filenames = fs.readdirSync(path);
-  for(const filename of filenames){
+  for (const filename of filenames) {
     fs.unlinkSync(`${path}/${filename}`);
   }
   fs.rmdirSync(path);
 }
 
-export function deleteFile(type: string, photoPath: string){
+export function deleteFile(type: string, photoPath: string) {
   const path = `${rootPhotoPath}/${type}/${photoPath}`;
   const isExisted = fs.existsSync(path);
-  if(!isExisted) return false;
+  if (!isExisted) return false;
   const filenames = fs.readdirSync(path);
-  for(const filename of filenames){
-    if(filename.includes(".jpg")){
+  for (const filename of filenames) {
+    if (filename.includes('.jpg')) {
       fs.unlinkSync(`${path}/${filename}`);
     }
   }

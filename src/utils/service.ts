@@ -5,7 +5,7 @@ import { findByEmail } from '../dao/user';
 import * as RoomDao from '../dao/room';
 import { IUser } from '../models/user';
 import { Room } from '../models/room';
-import { ICabinets} from '../models/cabinet';
+import { ICabinets } from '../models/cabinet';
 import { ITreasures } from '../models/treasure';
 
 export async function getUser(token: string) {
@@ -77,10 +77,10 @@ export function getTreasureArray(
   }
   return treasures;
 }
-export function getNewCabinet(preId?: string): string{
+export function getNewCabinet(preId?: string): string {
   let randomNum = getRandomNum(MAX_CABINET_NUM);
-  while((INDEX+randomNum) === preId){
+  while (INDEX + randomNum === preId) {
     randomNum = getRandomNum(MAX_CABINET_NUM);
   }
-  return INDEX+randomNum;
+  return INDEX + randomNum;
 }

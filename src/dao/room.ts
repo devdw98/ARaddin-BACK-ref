@@ -45,7 +45,7 @@ export async function getSetting(code: string): Promise<Setting> {
   return null;
 }
 
-export async function deleteSetting(code: string){
+export async function deleteSetting(code: string) {
   const ref = firestore.collection(collection).doc(code).collection(room_id);
   ref.doc(setting_id).delete();
   ref.doc(master_id).delete();
@@ -116,7 +116,6 @@ export async function getMaster(code: string): Promise<Master> {
   const master = new Master(new User(data.email, data.nickname), data.isReady);
   return master;
 }
-
 
 export async function deleteRoom(code: string) {
   try {

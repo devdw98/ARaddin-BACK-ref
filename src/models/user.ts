@@ -67,20 +67,20 @@ export class GameUser extends User {
     };
     return result;
   }
-  getGameInfo(){
-    const result:IUserGameInfo = {
+  getGameInfo() {
+    const result: IUserGameInfo = {
       role: this.role,
-      treasureCount: this.treasureCount
-    }
+      treasureCount: this.treasureCount,
+    };
     return result;
   }
-  addTreasureCount(count: number){
+  addTreasureCount(count: number) {
     this.treasureCount += count;
   }
-  set(role:Role, treasureCount?: number){
+  set(role: Role, treasureCount?: number) {
     this.role = role;
-      if(role === Role.TRAITOR){
-        this.treasureCount = 0;
-      }
+    if (role === Role.TRAITOR) {
+      this.treasureCount = 0;
+    }
   }
 }
