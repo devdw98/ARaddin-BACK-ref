@@ -70,7 +70,6 @@ export function copyDirectory(code: string, nickname: string){
     const isExisted = fs.existsSync(roomPath);
     if(!isExisted){
       fs.mkdirSync(roomPath, {recursive: true});
-      // fs.mkdirSync(`${roomPath}/isCatched`, {recursive: true});
     }
     fs.mkdir(userRoomPath,()=>{
         const filenames = fs.readdirSync(userPath);
@@ -86,3 +85,25 @@ export function copyDirectory(code: string, nickname: string){
   }
 }
 
+export function deleteDirectory(type: string, photoPath: string){
+  const path = `${rootPhotoPath}/${type}/${photoPath}`;
+  const isExisted = fs.existsSync(path);
+  if(!isExisted) return false;
+  const filenames = fs.readdirSync(path);
+  for(const filename of filenames){
+    fs.unlinkSync(`${path}/${filename}`);
+  }
+  fs.rmdirSync(path);
+}
+
+export function deleteFile(type: string, photoPath: string){
+  const path = `${rootPhotoPath}/${type}/${photoPath}`;
+  const isExisted = fs.existsSync(path);
+  if(!isExisted) return false;
+  const filenames = fs.readdirSync(path);
+  for(const filename of filenames){
+    if(filename.includes(".jpg")){
+      fs.unlinkSync(`${path}/${filename}`);
+    }
+  }
+}

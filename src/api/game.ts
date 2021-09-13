@@ -11,7 +11,7 @@ import { Game} from '../models/game';
 import * as RoomDao from '../dao/room';
 import * as GameDao from '../dao/game';
 import { isUserAIServer, learningPhotosAIServer } from '../utils/axiosUtils';
-import { uploadRoom, uploadPhotos } from '../utils/multerUtils';
+import { uploadRoom, uploadPhotos, deleteFile } from '../utils/multerUtils';
 import { roomPhotoPath } from '../vars';
 
 
@@ -310,10 +310,9 @@ async function catchRobber(req: Request, res: Response) {
       logger.info(`POST /game/robber | can't upload photo`);
       return res.status(200).json({ success: false });
     } else {
-      // return res.status(200).json({ success: true });
       const aiServerResponse = await isUserAIServer(code);
       const nickname = aiServerResponse.name;
-      console.log(nickname);
+      deleteFile('rooms', code);
       if (!nickname) {
         //못잡음
         return res.status(200).json({ success: false });

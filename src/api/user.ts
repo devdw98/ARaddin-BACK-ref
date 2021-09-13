@@ -5,7 +5,7 @@ import { checkFirebase } from '../utils/firebase';
 import { User } from '../models/user';
 import * as UserDao from '../dao/user';
 import { userPhotoPath } from '../vars';
-import { uploadPhotos, uploadUser } from '../utils/multerUtils';
+import { uploadPhotos, uploadUser, deleteDirectory, deleteFile } from '../utils/multerUtils';
 import { photoEncodingAIServer} from '../utils/axiosUtils';
 
 const loginScheme = yup.object({
@@ -30,6 +30,8 @@ async function login(req: Request, res: Response) {
       const isEnrolled = await UserDao.insert(user);
       logger.info(`POST /user | CREATE USER ${nickname} - ${isEnrolled}`);
     } else {
+      const existedUser = await UserDao.findByEmail(user.email);
+      deleteDirectory('users',existedUser.nickname);
       const isUpdate = await UserDao.update(user);
       logger.info(`POST /user | LOGIN USER ${nickname} - ${isUpdate.nickname}`);
     }
@@ -49,7 +51,7 @@ async function login(req: Request, res: Response) {
         user.nickname
       );
       if (aiServerResponse === 201) {
-        // TODO: delete raw photo files
+        deleteFile('users', user.nickname);
       return res.status(201).json({
         user: {
           email: user.email,
