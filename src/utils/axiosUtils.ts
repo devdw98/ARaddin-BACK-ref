@@ -16,11 +16,11 @@ export function photoEncodingAIServer(usernamePhotoPath: string) {
     });
 }
 
-export function learningPhotosAIServer(code: string, userPhotoPath: string) {
+export function learningPhotosAIServer(code: string) {
   return axios
     .post(`${aiServer}/model/prepare`, {
       room_num: code,
-      path: `${rootPhotoPath + userPhotoPath}/${userPhotoPath}`,
+      path: `${rootPhotoPath + roomPhotoPath}/${code}`,
     })
     .then((response) => {
       return response.status;

@@ -50,22 +50,20 @@ async function startGameMaster(req: Request, res: Response) {
     } else {
       //방장이 시작
       // 유저들 사진 ai-server에 학습
-      // const photoPath = rootPhotoPath + userPhotoPath + '/';
-      // for (let user of room.users) {
-      //   const aiServerResponse = await learningPhotosAIServer(
-      //     code,
-      //     photoPath + user.photoPath
-      //   );
-      //   console.log(aiServerResponse);
-      //   if (aiServerResponse == 200) {
-      //     continue;
-      //   } else {
-      //     return res.status(400).json({
-      //       success: false,
-      //       msg: `AI server can't prepare model ${user.email}`,
-      //     });
-      //   }
-      // }
+      for (let user of room.users) {
+        const aiServerResponse = await learningPhotosAIServer(
+          code
+
+        );
+        if (aiServerResponse == 201) {
+          continue;
+        } else {
+          return res.status(400).json({
+            success: false,
+            msg: `AI server can't prepare model ${user.email}`,
+          });
+        }
+      }
       //게임 초기화
       // 0. game 정보 초기화
       const gameInfo: IGame = {
