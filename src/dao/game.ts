@@ -1,17 +1,25 @@
-import { ICabinet } from '../models/cabinet';
+import { Cabinet, ICabinets } from '../models/cabinet';
 import { firestore } from '../app';
-import { IGameUser, Role } from '../models/gameUser';
-import { ITreasure } from '../models/treasure';
-import { GameUser } from '../models/user';
+import { ITreasures } from '../models/treasure';
+import { GameUser, User } from '../models/user';
 
 const upperCollection = `rooms`;
-const subCollection = `game`;
 
 const cabinet_id = 'cabinetInfo';
 const treasure_id = 'treasuresInfo';
 const users_id = 'usersInfo';
 
-export async function setCabinets(code: string, cabinets: ICabinet) {
+export async function setCabinet(code: string, id: number, cabinet: Cabinet){
+  const ref = firestore.collection(upperCollection).doc(code).collection(cabinet_id).doc(`index_${id}`);
+  const  result = await ref.set(cabinet.get());
+  return !!result.writeTime;
+}
+export async function getCabinet(code: string, id: string){
+  const ref = firestore.collection(upperCollection).doc(code).collection(cabinet_id).doc(id);
+  const result = (await ref.get()).data();
+  return new Cabinet(result['state'], result['treasureCount']);
+}
+export async function setCabinets(code: string, cabinets: ICabinets) {
   const ref = firestore
     .collection(upperCollection)
     .doc(code)
@@ -22,7 +30,37 @@ export async function setCabinets(code: string, cabinets: ICabinet) {
   }
   return count != 0;
 }
-export async function setTreasures(code: string, treasures: ITreasure) {
+export async function findCabinetInfos(code: string) {
+  let cabinets: ICabinets = {};
+  const ref = firestore
+    .collection(upperCollection)
+    .doc(code)
+    .collection(cabinet_id);
+  const docs = await ref.listDocuments();
+  for (const doc of docs) {
+    const data = (await doc.get()).data();
+    cabinets[doc.id] = {
+      state: data['state'],
+      treasureCount: data['treasureCount'],
+    };
+  }
+  return cabinets;
+}
+export async function updateCabinetInfo(
+  code: string,
+  id: string,
+  cabinet: Cabinet
+) {
+  const ref = firestore
+    .collection(upperCollection)
+    .doc(code)
+    .collection(cabinet_id).doc(id);
+  const doc = await ref
+    .update(cabinet.get());
+  return !!doc;
+}
+
+export async function setTreasures(code: string, treasures: ITreasures) {
   const ref = firestore
     .collection(upperCollection)
     .doc(code)
@@ -33,18 +71,6 @@ export async function setTreasures(code: string, treasures: ITreasure) {
   }
   return count != 0;
 }
-export async function setGameUsers(code: string, users: IGameUser) {
-  const ref = firestore
-    .collection(upperCollection)
-    .doc(code)
-    .collection(users_id);
-  let count = 0;
-  for (const [key, value] of Object.entries(users)) {
-    count = ref.doc(key).set(value) ? count + 1 : count;
-  }
-  return count != 0;
-}
-
 export async function findTreasureInfo(code: string, id: string) {
   const ref = firestore
     .collection(upperCollection)
@@ -55,7 +81,7 @@ export async function findTreasureInfo(code: string, id: string) {
   return !treasure_doc ? null : treasure_doc['state'];
 }
 export async function findTreasureInfos(code: string) {
-  let treasures: ITreasure = {};
+  let treasures: ITreasures = {};
   const ref = firestore
     .collection(upperCollection)
     .doc(code)
@@ -83,27 +109,15 @@ export async function updateTreasureInfo(
   const doc = await ref.update({ state: state });
   return !!doc;
 }
-export async function updateTreasureInfos(code: string, treasures: ITreasure) {
-  const ref = firestore
-    .collection(upperCollection)
-    .doc(code)
-    .collection(treasure_id);
-  const doc = await ref.doc(treasure_id).update(treasures);
-  return !!doc;
-}
+
 export async function findGameUser(code: string, nickname: string) {
   const ref = firestore
     .collection(upperCollection)
     .doc(code)
-    .collection(users_id);
-  const user_data = await (await ref.doc(nickname).get()).data();
-  const user: IGameUser = {
-    [nickname]: {
-      role: user_data['role'],
-      treasureCount: user_data['treasureCount'],
-    },
-  };
-  return user[nickname];
+    .collection(users_id).doc(nickname);
+  const data = await (await ref.get()).data();
+  const user = new GameUser(new User(data['email'], nickname), {role: data['role'], treasureCount: data['treasureCount']});
+  return user;
 }
 
 export async function updateGameUser(code: string, user: GameUser) {
@@ -115,42 +129,7 @@ export async function updateGameUser(code: string, user: GameUser) {
   return !!doc;
 }
 
-export async function findCabinetInfos(code: string) {
-  let cabinets: ICabinet = {};
-  const ref = firestore
-    .collection(upperCollection)
-    .doc(code)
-    .collection(cabinet_id);
-  const docs = await ref.listDocuments();
-  for (const doc of docs) {
-    const data = (await doc.get()).data();
-    cabinets[doc.id] = {
-      state: data['state'],
-      treasureCount: data['treasureCount'],
-    };
-  }
-  return cabinets;
-}
-export async function updateCabinetInfos(code: string, cabinets: ICabinet) {
-  const ref = firestore
-    .collection(upperCollection)
-    .doc(code)
-    .collection(cabinet_id);
-  const doc = await ref.doc(cabinet_id).update(cabinets);
-  return !!doc;
-}
-export async function updateCabinetInfo(
-  code: string,
-  id: string,
-  state: boolean,
-  treasureCount: number
-) {
-  const ref = firestore
-    .collection(upperCollection)
-    .doc(code)
-    .collection(cabinet_id);
-  const doc = await ref
-    .doc(id)
-    .update({ state: state, treasureCount: treasureCount });
-  return !!doc;
+export async function findGameUsers(code: string){
+  const ref = firestore.collection(upperCollection).doc(code).collection(users_id);
+  
 }

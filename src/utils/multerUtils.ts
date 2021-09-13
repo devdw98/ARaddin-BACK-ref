@@ -40,16 +40,17 @@ export function uploadPhotos(
 ) {
   try {
     const path = `${rootPhotoPath}${pipe}`;
+    const newPath = `${path}/${photoPath}`;
     const filenames = files.map((f) =>
       f.fieldname === 'photos' ? f.filename : null
     );
-    const isExisted = fs.existsSync(path);
+    const isExisted = fs.existsSync(newPath);
     if (!isExisted) {
-      fs.mkdirSync(path, { recursive: true });
+      fs.mkdirSync(newPath, { recursive: true });
     }
     for (const name in filenames) {
       const oldname = `${path}/${filenames[name]}`;
-      const newname = `${path}/${photoPath}/${photoPath}-${name}.jpg`;
+      const newname = `${newPath}/${photoPath}-${name}.jpg`;
       fs.rename(oldname, newname, function (err) {
         if (err) throw err;
       });

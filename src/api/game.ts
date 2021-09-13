@@ -1,18 +1,19 @@
 import express, { Request, Response } from 'express';
 import logger from '../utils/logger';
 import * as yup from 'yup';
+import * as Service from '../utils/service';
+
+import {  User,GameUser, Master, Role } from '../models/user';
+import { ITreasures } from '../models/treasure';
+import { Cabinet, ICabinets } from '../models/cabinet';
+import { Game} from '../models/game';
+
 import * as RoomDao from '../dao/room';
 import * as GameDao from '../dao/game';
-import { ITreasure } from '../models/treasure';
-import { ICabinet } from '../models/cabinet';
-import { IGameUser, Role } from '../models/gameUser';
 import { isUserAIServer, learningPhotosAIServer } from '../utils/axiosUtils';
 import { uploadRoom, uploadPhotos } from '../utils/multerUtils';
-import { rootPhotoPath, userPhotoPath, roomPhotoPath } from '../vars';
-import * as Service from '../utils/service';
-import { GameUser, Master } from '../models/user';
-import { User } from '../models/user';
-import { IGame } from '../models/game';
+import { roomPhotoPath } from '../vars';
+
 
 /**
  * 도둑 - [1]보물 수집, [2]금고에 보물 보관,
@@ -46,33 +47,25 @@ async function startGameMaster(req: Request, res: Response) {
       logger.info(`POST /game | ${user.nickname} is not master.`);
       return res
         .status(200)
-        .json({ success: false, msg: `You are not master.` }); //준비
+        .json({ success: false, msg: `You are not master.` });
     } else {
       //방장이 시작
       // 유저들 사진 ai-server에 학습
-      for (let user of room.users) {
         const aiServerResponse = await learningPhotosAIServer(
           code
-
         );
-        if (aiServerResponse == 201) {
-          continue;
-        } else {
+        if (aiServerResponse !== 201) {
           return res.status(400).json({
             success: false,
-            msg: `AI server can't prepare model ${user.email}`,
+            msg: `AI server can't prepare model`,
           });
         }
-      }
+
       //게임 초기화
       // 0. game 정보 초기화
-      const gameInfo: IGame = {
-        finish: false,
-        winTeam: Role.NOT,
-      };
-      RoomDao.setGame(code, gameInfo);
+      RoomDao.setGame(code, new Game().get());
       // 1. 보물 위치
-      let treasureArr: ITreasure = {};
+      let treasureArr: ITreasures = {};
       for (let i = 0; i < Service.MAX_TREASURE_NUM; i++) {
         //보물 초기화
         treasureArr[Service.INDEX + i] = {
@@ -84,12 +77,10 @@ async function startGameMaster(req: Request, res: Response) {
         Service.MAX_TREASURE_NUM,
         treasureArr
       );
-      // GameDao.setTreasures(code, treasureArr);
       // 2. 캐비넷 위치
-      const cabinets: ICabinet = Service.getCabinetArray();
-      // GameDao.setCabinets(code, cabinets);
-      // // 3. 역할 정하기
-      // const users: IGameUser = {};
+      const cabinets: ICabinets = Service.getCabinetArray();
+
+      // 3. 역할 정하기
       const policeIndex = Service.getRandomNum(room.users.length);
       for (let i = 0; i < room.users.length; i++) {
         const user = new GameUser(
@@ -104,12 +95,10 @@ async function startGameMaster(req: Request, res: Response) {
         }
         GameDao.updateGameUser(code, user);
       }
-      // GameDao.setGameUsers(code, users);
       // 게임 초기화 끝
       if (
         GameDao.setTreasures(code, treasureArr) &&
         GameDao.setCabinets(code, cabinets)
-        // GameDao.setGameUsers(code, users)
       ) {
         const result = await RoomDao.setMaster(
           code,
@@ -145,21 +134,21 @@ async function startGameUser(req: Request, res: Response) {
     }
     const cabinets = await GameDao.findCabinetInfos(code);
     const treasures = await GameDao.findTreasureInfos(code);
-    const info = await GameDao.findGameUser(code, user.nickname);
+    const gameUser = await GameDao.findGameUser(code, user.nickname);
     logger.info(
       `GET /game | Success to bring up the game! room code : ${code} - ENJOY!`
     );
 
-    if (!info) {
+    if (!gameUser) {
       logger.info(`GET /game | You are not entered this room code: ${code}`);
       return res
         .status(400)
         .json({ success: false, msg: 'Failed to bring up the game!' });
-    }
+    } // TODO
     return res.status(200).json({
       cabinets: cabinets,
       treasures: treasures,
-      info: info,
+      info: gameUser.getGameInfo(),
     });
   } catch (e) {
     logger.error(e);
@@ -192,23 +181,21 @@ async function findTreasure(req: Request, res: Response) {
       return res.status(400).json({ success: false, msg: failedLog });
     }
     const state = await GameDao.findTreasureInfo(code, id);
-    if (state) {
+    const gameUser = await GameDao.findGameUser(code, user.nickname);
+    if (state && gameUser.role === Role.THIEF) {
       const isUpdated = await GameDao.updateTreasureInfo(code, id, false);
       if (isUpdated) {
-        const gameUser = await GameDao.findGameUser(code, user.nickname);
-        gameUser.treasureCount += 1;
+        gameUser.addTreasureCount(1);
         const isUpdatedUser = await GameDao.updateGameUser(
           code,
-          new GameUser(user, {
-            role: gameUser.role,
-            treasureCount: gameUser.treasureCount,
-          })
+          gameUser
         );
         return res.status(200).json({ state: !state });
       }
+    }else{
+      logger.info(`you are ${Role[gameUser.role]}`);
+      return res.status(200).json({state: true});
     }
-
-    return res.status(200).json({ state: true });
   } catch (e) {
     logger.error(e);
     return res.status(400).json({ success: false, msg: e.message });
@@ -227,28 +214,26 @@ async function keepTreasureInCabinet(req: Request, res: Response) {
       return res.status(400).json({ success: false, msg: failedLog });
     }
     const gameUser = await GameDao.findGameUser(code, user.nickname);
-    const cabinets = await GameDao.findCabinetInfos(code);
-    const setting = await RoomDao.getSetting(code);
-    if (cabinets[id].state) {
+    const cabinet = await GameDao.getCabinet(code, id);
+    if (cabinet.state && gameUser.role === Role.THIEF) {
       // 열린 금고일 때만
-      const count = cabinets[id].treasureCount + gameUser.treasureCount;
+      cabinet.addTreasureCount(gameUser.treasureCount);
+      gameUser.addTreasureCount((-1)*gameUser.treasureCount);
+      
       const isUpdatedCabinet = await GameDao.updateCabinetInfo(
         code,
         id,
-        true,
-        count
+        cabinet
       );
       const isUpdatedUser = await GameDao.updateGameUser(
         code,
-        new GameUser(user, { role: gameUser.role, treasureCount: 0 })
+        gameUser
       );
-      if (count >= setting.goal) {
-        // 게임 종료 조건 1 - 목표치 다 채움
-        const gameInfo: IGame = {
-          finish: true,
-          winTeam: Role.THIEF,
-        };
-        RoomDao.setGame(code, gameInfo);
+      const setting = await RoomDao.getSetting(code);
+      if (cabinet.treasureCount >= setting.goal) {
+        // 게임 종료 조건 - 목표치 다 채움
+        const gameInfo = new Game(true, Role.THIEF);
+        RoomDao.setGame(code, gameInfo.get());
       }
       return isUpdatedCabinet && isUpdatedUser //반환값 상의
         ? res.status(200).json({ state: true })
@@ -266,21 +251,24 @@ async function findCabinet(req: Request, res: Response) {
   try {
     const id = req.params.id; // 캐비넷 번호
     const code: string = codeSchema.validateSync(req.query.code);
-    const cabinets = await GameDao.findCabinetInfos(code);
+    const cabinet = await GameDao.getCabinet(code, id);
     const treasures = await GameDao.findTreasureInfos(code);
 
     // 도둑들이 중간에 변경하지 못하게 해야할듯
-    if (cabinets[id].state) {
+    if (cabinet.state) {
+      const treasureCount = cabinet.treasureCount;
+      cabinet.init();
+      GameDao.updateCabinetInfo(code, id, cabinet);
       // 금고 재배치 & 금고 안 보물 수만큼 보물 배치
-      const newCabinets = Service.getCabinetArray(id);
+      const newId = Service.getNewCabinet(id);
       const newTreasures = Service.getTreasureArray(
-        cabinets[id].treasureCount,
+        treasureCount,
         Object.keys(treasures).length,
         treasures
       );
-      const isUpdatedCabinets = await GameDao.setCabinets(code, newCabinets);
+      const isUpdatedCabinet = await GameDao.updateCabinetInfo(code, newId, new Cabinet(true, 0));
       const isUpdatedTreasures = await GameDao.setTreasures(code, newTreasures);
-      if (isUpdatedCabinets && isUpdatedTreasures) {
+      if (isUpdatedCabinet && isUpdatedTreasures) {
         return res.status(200).json({ success: true });
       }
     } else {
@@ -324,38 +312,37 @@ async function catchRobber(req: Request, res: Response) {
     } else {
       // return res.status(200).json({ success: true });
       const aiServerResponse = await isUserAIServer(code);
-      console.log(aiServerResponse.name);
       const nickname = aiServerResponse.name;
+      console.log(nickname);
       if (!nickname) {
         //못잡음
         return res.status(200).json({ success: false });
       } else {
         //잡음
-      //   const nickname = aiServerResponse.nickname;
-      //   console.log(nickname);
-      const gameUserInfo = await GameDao.findGameUser(code, nickname);
-      if (!gameUserInfo) {
+      const gameUser = await GameDao.findGameUser(code, nickname);
+      if (!gameUser) {
         return res.status(200).json({ success: false });
       } else {
-        // const treasures = await GameDao.findTreasureInfos(code);
-        // const newTreasures = Service.getTreasureArray(
-        //   gameUser.treasureCount,
-        //   Object.keys(treasures).length,
-        //   treasures
-        // );
-        // const isUpdatedTreasures = await GameDao.updateTreasureInfos(
-        //   code,
-        //   newTreasures
-        // );
-        // // gameUser.updateInfos(Role.TRAITOR);
-        // const isUpdatedUser = await GameDao.updateGameUser(
-        //   code,
-        //   gameUser
-        // );
-        // return res
-        //   .status(200)
-        //   .json({ success: isUpdatedUser && isUpdatedTreasures });
-      return res.status(200).json({success:true});
+        const treasures = await GameDao.findTreasureInfos(code);
+        const newTreasures = Service.getTreasureArray(
+          gameUser.treasureCount,
+          Object.keys(treasures).length,
+          treasures
+        );
+        const isUpdatedTreasures = await GameDao.setTreasures(
+          code,
+          newTreasures
+        );
+        gameUser.set(Role.TRAITOR);
+        const isUpdatedUser = await GameDao.updateGameUser(
+          code,
+          gameUser
+        );
+        
+        // TODO : remain thief users -> end game statement
+        return res
+          .status(200)
+          .json({ success: isUpdatedUser && isUpdatedTreasures });
       }
       }
     }
@@ -378,7 +365,7 @@ async function endGame(req: Request, res: Response) {
     }
     const gameUser = await GameDao.findGameUser(code, user.nickname);
     const winTeam = await RoomDao.getGame(code);
-    const result = gameUser.role == winTeam;
+    const result = gameUser.role === winTeam;
     logger.info(`GET /game/end | finish game. win team is ${Role[winTeam]}`);
     return res.status(200).json({
       win: result,

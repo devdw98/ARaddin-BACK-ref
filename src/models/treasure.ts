@@ -1,4 +1,4 @@
-export interface ITreasure {
+export interface ITreasures {
   [treasureId: string]: {
     state: boolean;
   };

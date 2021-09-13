@@ -1,11 +1,12 @@
 import { checkFirebase } from './firebase';
+import logger from './logger';
+
 import { findByEmail } from '../dao/user';
 import * as RoomDao from '../dao/room';
 import { IUser } from '../models/user';
 import { Room } from '../models/room';
-import { ICabinet } from '../models/cabinet';
-import { ITreasure } from '../models/treasure';
-import logger from './logger';
+import { ICabinets} from '../models/cabinet';
+import { ITreasures } from '../models/treasure';
 
 export async function getUser(token: string) {
   try {
@@ -33,15 +34,15 @@ export async function getRoom(code: string, users?: Array<IUser>) {
 }
 
 export const MAX_TREASURE_NUM = 30;
-const MAX_CABINET_NUM = 5;
+export const MAX_CABINET_NUM = 5;
 export const INDEX = 'index_';
 
 export function getRandomNum(length: number) {
   const num = Math.floor(Math.random() * length);
   return num;
 }
-export function getCabinetArray(preId?: string): ICabinet {
-  const cabinets: ICabinet = {};
+export function getCabinetArray(preId?: string): ICabinets {
+  const cabinets: ICabinets = {};
   let maxNum = MAX_CABINET_NUM;
   for (let i = 0; i < maxNum; i++) {
     cabinets[INDEX + i] = {
@@ -62,8 +63,8 @@ export function getCabinetArray(preId?: string): ICabinet {
 export function getTreasureArray(
   length: number,
   maxLength: number,
-  treasuresArg: ITreasure
-): ITreasure {
+  treasuresArg: ITreasures
+): ITreasures {
   const treasures = treasuresArg;
   let maxNum = maxLength; //50?
   for (let i = 0; i < length; i++) {
@@ -75,4 +76,11 @@ export function getTreasureArray(
     treasures[INDEX + randomNum].state = true;
   }
   return treasures;
+}
+export function getNewCabinet(preId?: string): string{
+  let randomNum = getRandomNum(MAX_CABINET_NUM);
+  while((INDEX+randomNum) === preId){
+    randomNum = getRandomNum(MAX_CABINET_NUM);
+  }
+  return INDEX+randomNum;
 }

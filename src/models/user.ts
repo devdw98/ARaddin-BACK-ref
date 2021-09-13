@@ -1,4 +1,9 @@
-import { Role } from './gameUser';
+export enum Role {
+  THIEF, //도둑
+  TRAITOR, //배신자 (도둑 아웃)
+  POLICE, //경찰
+  NOT = 10,
+}
 
 export interface IUser {
   email: string;
@@ -61,5 +66,21 @@ export class GameUser extends User {
       treasureCount: this.treasureCount,
     };
     return result;
+  }
+  getGameInfo(){
+    const result:IUserGameInfo = {
+      role: this.role,
+      treasureCount: this.treasureCount
+    }
+    return result;
+  }
+  addTreasureCount(count: number){
+    this.treasureCount += count;
+  }
+  set(role:Role, treasureCount?: number){
+    this.role = role;
+      if(role === Role.TRAITOR){
+        this.treasureCount = 0;
+      }
   }
 }
