@@ -5,7 +5,6 @@ import * as Service from '../utils/service';
 import { Master, User } from '../models/user';
 import { Place, Setting, Room } from '../models/room';
 import * as RoomDao from '../dao/room';
-import { learningPhotosAIServer } from '../utils/axiosUtils';
 import { copyDirectory } from '../utils/multerUtils';
 
 const tokenScheme = yup.string().required();
