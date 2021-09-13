@@ -1,12 +1,12 @@
 import express, { Request, Response } from 'express';
 import logger from '../utils/logger';
 import * as yup from 'yup';
-import { User, IUser } from '../models/user';
 import { checkFirebase } from '../utils/firebase';
+import { User } from '../models/user';
 import * as UserDao from '../dao/user';
-import { rootPhotoPath, userPhotoPath } from '../vars';
+import { userPhotoPath } from '../vars';
 import { uploadPhotos, uploadUser } from '../utils/multerUtils';
-import { photoEncodingAIServer, isUserAIServer } from '../utils/axiosUtils';
+import { photoEncodingAIServer} from '../utils/axiosUtils';
 
 const loginScheme = yup.object({
   token: yup.string().required(),
@@ -49,6 +49,7 @@ async function login(req: Request, res: Response) {
         user.nickname
       );
       if (aiServerResponse === 201) {
+        // TODO: delete raw photo files
       return res.status(201).json({
         user: {
           email: user.email,
