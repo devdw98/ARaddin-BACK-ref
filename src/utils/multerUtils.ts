@@ -61,3 +61,30 @@ export function uploadPhotos(
     return false;
   }
 }
+
+export function copyDirectory(code: string, nickname: string){
+  try{
+    const userPath = `${rootPhotoPath}${userPhotoPath}/${nickname}`;
+    const roomPath = `${rootPhotoPath}${roomPhotoPath}/${code}`;
+    const userRoomPath = roomPath+`/${nickname}`;
+    const isExisted = fs.existsSync(roomPath);
+    if(!isExisted){
+      fs.mkdirSync(roomPath, {recursive: true});
+    }
+    fs.mkdir(userRoomPath,(res)=>{
+        // fs.copyFileSync(userPath, )
+        const filenames = fs.readdirSync(userPath);
+      for(const filename of filenames){
+        if(filename.includes(".npy")){
+          fs.copyFileSync(`${userPath}/${filename}`, `${userRoomPath}/${filename}`);
+        }
+      }
+    })
+    
+
+  }catch(e){
+    logger.error(e.message);
+    return false;
+  }
+
+}

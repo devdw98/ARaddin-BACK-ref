@@ -6,6 +6,7 @@ import { Place, Setting, Room } from '../models/room';
 import logger from '../utils/logger';
 import { learningPhotosAIServer } from '../utils/axiosUtils';
 import * as Service from '../utils/service';
+import { copyDirectory } from '../utils/multerUtils';
 
 const tokenScheme = yup.string().required();
 
@@ -25,6 +26,7 @@ async function createRoom(req: Request, res: Response) {
     RoomDao.setUsers(code, [user.get()]);
     const gameUser = RoomDao.setUser(code, user);
     const room = new Room(code, master, [user], setting);
+    copyDirectory(code, master.nickname);
     logger.info(`POST /room/new | success! room code : ${room.code}`);
     return res.status(201).send(room);
   } catch (e) {
@@ -99,6 +101,7 @@ async function enterRoom(req: Request, res: Response) {
         return Service.getRoom(code, data);
       });
       const gameUser = RoomDao.setUser(code, user);
+      copyDirectory(code, user.nickname);
       logger.info(`POST /room | Success to enter room code : ${code}`);
       return res.status(200).json({ room: await result });
     }
