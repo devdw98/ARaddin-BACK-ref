@@ -317,46 +317,47 @@ async function catchRobber(req: Request, res: Response) {
     // AI 서버에서 유저 확인 - photoPath - code
     const code: string = codeSchema.validateSync(req.query.code);
     const files = req.files as Express.Multer.File[];
-    const isUpload = uploadPhotos(rootPhotoPath + roomPhotoPath, code, files);
+    const isUpload = uploadPhotos(roomPhotoPath, code, files);
     if (!isUpload) {
       logger.info(`POST /game/robber | can't upload photo`);
       return res.status(200).json({ success: false });
     } else {
-      return res.status(200).json({ success: true });
-      // const aiServerResponse = await isUserAIServer(code);
-      // console.log(aiServerResponse);
-      // if (!aiServerResponse) {
-      //   //못잡음
-      //   return res.status(200).json({ success: false });
-      // } else {
-      //   //잡음
+      // return res.status(200).json({ success: true });
+      const aiServerResponse = await isUserAIServer(code);
+      console.log(aiServerResponse.name);
+      const nickname = aiServerResponse.name;
+      if (!nickname) {
+        //못잡음
+        return res.status(200).json({ success: false });
+      } else {
+        //잡음
       //   const nickname = aiServerResponse.nickname;
       //   console.log(nickname);
-      // const gameUser = await GameDao.findGameUser(code, nickname);
-      // if (!gameUser) {
-      //   return res.status(200).json({ success: false });
-      // } else {
-      //   const treasures = await GameDao.findTreasureInfos(code);
-      //   const newTreasures = getTreasureArray(
-      //     gameUser.treasureCount,
-      //     Object.keys(treasures).length,
-      //     treasures
-      //   );
-      //   const isUpdatedTreasures = await GameDao.updateTreasureInfos(
-      //     code,
-      //     newTreasures
-      //   );
-      //   const isUpdatedUser = await GameDao.updateGameUser(
-      //     code,
-      //     nickname,
-      //     Role.TRAITOR,
-      //     0
-      //   );
-      //   return res
-      //     .status(200)
-      //     .json({ success: isUpdatedUser && isUpdatedTreasures });
-      // }
-      // }
+      const gameUserInfo = await GameDao.findGameUser(code, nickname);
+      if (!gameUserInfo) {
+        return res.status(200).json({ success: false });
+      } else {
+        // const treasures = await GameDao.findTreasureInfos(code);
+        // const newTreasures = Service.getTreasureArray(
+        //   gameUser.treasureCount,
+        //   Object.keys(treasures).length,
+        //   treasures
+        // );
+        // const isUpdatedTreasures = await GameDao.updateTreasureInfos(
+        //   code,
+        //   newTreasures
+        // );
+        // // gameUser.updateInfos(Role.TRAITOR);
+        // const isUpdatedUser = await GameDao.updateGameUser(
+        //   code,
+        //   gameUser
+        // );
+        // return res
+        //   .status(200)
+        //   .json({ success: isUpdatedUser && isUpdatedTreasures });
+      return res.status(200).json({success:true});
+      }
+      }
     }
   } catch (e) {
     logger.error(e.message);
@@ -397,7 +398,7 @@ router.put('/treasure/:id', findTreasure);
 router.put('/cabinet/:id', keepTreasureInCabinet);
 router.post('/cabinet/:id', findCabinet);
 router.get('/cabinet', findTreasureCount);
-// router.post('/robber', [uploadRoom.array('photos')], catchRobber);
+router.post('/robber', [uploadRoom.array('photos')], catchRobber);
 router.get('/end', endGame); //게임 종료
 
 export { router as gameRouter };

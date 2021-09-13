@@ -36,9 +36,9 @@ async function login(req: Request, res: Response) {
     // photos upload + AI server encoding photos
     const files = req.files as Express.Multer.File[];
     const isUpload = uploadPhotos(
-      rootPhotoPath + userPhotoPath,
+      userPhotoPath,
       user.nickname,
-      files
+      files,
     );
     if (!isUpload) {
       return res

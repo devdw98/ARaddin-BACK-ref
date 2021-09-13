@@ -34,23 +34,22 @@ const roomStorage = multer.diskStorage({
 export const uploadRoom = multer({ storage: roomStorage });
 
 export function uploadPhotos(
-  rootPhotoPath: string,
-  photoPath: string,
-  files: Express.Multer.File[]
+  pipe: string,
+  photoPath:string,
+  files: Express.Multer.File[],
 ) {
   try {
-    const dirPath = `${rootPhotoPath}`;
-    const userPath = `${dirPath}/${photoPath}`;
+    const path = `${rootPhotoPath}${pipe}`;
     const filenames = files.map((f) =>
       f.fieldname === 'photos' ? f.filename : null
     );
-    const isExisted = fs.existsSync(userPath);
+    const isExisted = fs.existsSync(path);
     if (!isExisted) {
-      fs.mkdirSync(userPath, { recursive: true });
+      fs.mkdirSync(path, { recursive: true });
     }
     for (const name in filenames) {
-      const oldname = `${dirPath}/${filenames[name]}`;
-      const newname = `${userPath}/${photoPath}-${name}.jpg`;
+      const oldname = `${path}/${filenames[name]}`;
+      const newname = `${path}/${photoPath}/${photoPath}-${name}.jpg`;
       fs.rename(oldname, newname, function (err) {
         if (err) throw err;
       });
@@ -70,9 +69,9 @@ export function copyDirectory(code: string, nickname: string){
     const isExisted = fs.existsSync(roomPath);
     if(!isExisted){
       fs.mkdirSync(roomPath, {recursive: true});
+      // fs.mkdirSync(`${roomPath}/isCatched`, {recursive: true});
     }
-    fs.mkdir(userRoomPath,(res)=>{
-        // fs.copyFileSync(userPath, )
+    fs.mkdir(userRoomPath,()=>{
         const filenames = fs.readdirSync(userPath);
       for(const filename of filenames){
         if(filename.includes(".npy")){
@@ -80,11 +79,9 @@ export function copyDirectory(code: string, nickname: string){
         }
       }
     })
-    
-
   }catch(e){
     logger.error(e.message);
     return false;
   }
-
 }
+
