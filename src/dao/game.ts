@@ -131,5 +131,6 @@ export async function updateGameUser(code: string, user: GameUser) {
 
 export async function findGameUsers(code: string){
   const ref = firestore.collection(upperCollection).doc(code).collection(users_id);
-  
+  const data = await ref.where('role','==',0).get();
+  return data.size;
 }

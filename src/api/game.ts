@@ -13,6 +13,7 @@ import * as GameDao from '../dao/game';
 import { isUserAIServer, learningPhotosAIServer } from '../utils/axiosUtils';
 import { uploadRoom, uploadPhotos, deleteFile } from '../utils/multerUtils';
 import { roomPhotoPath } from '../vars';
+import { enrollSchedule, gameOverBeforeTimeOut } from '../utils/scheduleUtils';
 
 
 /**
@@ -104,6 +105,7 @@ async function startGameMaster(req: Request, res: Response) {
           code,
           new Master(new User(room.master.email, room.master.nickname), true)
         );
+        enrollSchedule(code, room.setting.timeLimit);
         logger.info(
           `POST /game | Success to initialize game room code: ${code} - ENJOY!`
         );
@@ -232,6 +234,7 @@ async function keepTreasureInCabinet(req: Request, res: Response) {
       const setting = await RoomDao.getSetting(code);
       if (cabinet.treasureCount >= setting.goal) {
         // 게임 종료 조건 - 목표치 다 채움
+        gameOverBeforeTimeOut(code);
         const gameInfo = new Game(true, Role.THIEF);
         RoomDao.setGame(code, gameInfo.get());
       }
@@ -338,7 +341,11 @@ async function catchRobber(req: Request, res: Response) {
           gameUser
         );
         
-        // TODO : remain thief users -> end game statement
+        const size = await GameDao.findGameUsers(code);
+        if(size === 0){
+          gameOverBeforeTimeOut(code);
+          RoomDao.setGame(code, new Game(true, Role.POLICE).get());
+        }
         return res
           .status(200)
           .json({ success: isUpdatedUser && isUpdatedTreasures });
