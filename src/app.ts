@@ -1,6 +1,5 @@
 import express from 'express';
 import { firebaseFile } from './vars';
-import { execPy } from './test';
 import { initialFirebase } from './utils/firebase';
 import router from './api/_index';
 
@@ -13,7 +12,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use('/api', router);
 
 app.get('/', (req, res) => {
-  execPy('./aiUtils/face/main.py');
   res.send('Hello World!2');
 });
 
