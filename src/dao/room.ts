@@ -45,12 +45,13 @@ export async function getSetting(code: string): Promise<Setting> {
   return null;
 }
 
-export async function deleteSetting(code: string) {
+export async function deleteSetting(code: string){
   const ref = firestore.collection(collection).doc(code).collection(room_id);
   ref.doc(setting_id).delete();
   ref.doc(master_id).delete();
 }
 
+// store user info
 export async function setUser(code: string, user: User): Promise<GameUser> {
   const gameUser = new GameUser(user);
   try {
@@ -70,6 +71,7 @@ export async function deleteUser(code: string, user: User) {
   }
 }
 
+// user all list
 export async function setUsers(
   code: string,
   users: Array<IUser>
@@ -115,23 +117,12 @@ export async function getMaster(code: string): Promise<Master> {
   return master;
 }
 
-export async function findRoomUsers(code: string): Promise<IUser[]> {
-  try {
-    const ref = firestore.collection(collection).doc(code).get();
-    if (!(await ref).exists) {
-      return null;
-    }
-    const datas: Array<User> = (await ref).data()['users'];
-    return datas;
-  } catch (e) {
-    logger.error(e.message);
-  }
-}
+
 export async function deleteRoom(code: string) {
   try {
     const ref = firestore.collection(collection).doc(code);
-    ref.collection(room_id).doc(setting_id).delete();
-    ref.collection(room_id).doc(master_id).delete();
+    ref.collection(room_id).doc(setting_id).delete(); // settings
+    ref.collection(room_id).doc(master_id).delete(); // master
     const doc = await ref.delete();
     return !!doc.writeTime;
   } catch (e) {
